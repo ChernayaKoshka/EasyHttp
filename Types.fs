@@ -68,7 +68,7 @@ type Endpoint =
         Method: HttpMethod
         SerializationType: SerializationType
         ArgumentType: Type
-        ResultType: Type
+        ReturnType: Type
     }
 
 type IApiDefinition =
