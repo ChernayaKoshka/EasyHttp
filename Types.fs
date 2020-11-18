@@ -13,17 +13,6 @@ type SerializationType =
     | JsonSerialization
     | QueryStringSerialization
 
-type EHttpMethod =
-    | Get     = 0
-    | Head    = 1
-    | Post    = 2
-    | Put     = 3
-    | Delete  = 4
-    | Connect = 5
-    | Options = 6
-    | Trace   = 7
-    | Patch   = 8
-
 let private methodAllowsBody (method: string) =
         match method.ToLowerInvariant() with
         | "get" | "delete" | "trace" | "options" | "head" -> false
@@ -49,11 +38,6 @@ type EndpointDescriptionAttribute(?path: string, ?method: string, ?serialization
 
     do if checkMethodAndSerializationTypeCompatible method serializationType then ()
        else failwith $"{method} is not compatible with serialization type {serializationType}. Likely because it cannot have a body."
-
-    new(?path: string, ?method: EHttpMethod, ?serializationType: ESerializationType) =
-        EndpointDescriptionAttribute(?path = path, ?method = Option.map string method, ?serializationType = serializationType)
-
-    new() = EndpointDescriptionAttribute()
 
     member val Path: string = path
     member val Method = HttpMethod method
