@@ -40,12 +40,6 @@ let private getDefaultSerializationType (method: string) =
 type EndpointDescriptionAttribute(?path: string, ?method: string, ?serializationType: ESerializationType) =
     inherit Attribute()
 
-    do
-        match serializationType with
-        | Some stype when Enum.GetValues<ESerializationType>() |> Seq.contains stype |> not ->
-            invalidArg (nameof serializationType) $"'{serializationType}' is not a supported serialization type."
-        | _ -> ()
-
     let path = Option.defaultValue "/" path
     let method = Option.defaultValue "POST" method
     let serializationType =
@@ -58,7 +52,12 @@ type EndpointDescriptionAttribute(?path: string, ?method: string, ?serialization
 
     member val Path: string = path
     member val Method = HttpMethod method
-    member val SerializationType = serializationType
+    member val SerializationType =
+        match serializationType with
+        | ESerializationType.Json -> JsonSerialization
+        | ESerializationType.QueryString -> QueryStringSerialization
+        | _ -> invalidArg (nameof serializationType) $"'{serializationType}' is not a supported serialization type."
+
     member __.AreMethodAndSerializationTypeCompatible = checkMethodAndSerializationTypeCompatible method serializationType
     static member Default = EndpointDescriptionAttribute()
 
