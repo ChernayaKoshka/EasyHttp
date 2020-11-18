@@ -26,29 +26,16 @@ let private getDefaultSerializationType (method: string) =
         else ESerializationType.QueryString
 
 [<AttributeUsage(AttributeTargets.Property)>]
-type EndpointDescriptionAttribute(?path: string, ?method: string, ?serializationType: ESerializationType) =
-    inherit Attribute()
+type PathAttribute(path: string) =
+    member __.Path = path
 
-    let path = Option.defaultValue "/" path
-    let method = Option.defaultValue "POST" method
-    let serializationType =
-        match serializationType with
-        | Some stype -> stype
-        | None -> getDefaultSerializationType method
+[<AttributeUsage(AttributeTargets.Property)>]
+type MethodAttribute(method: string) =
+    member __.Method = HttpMethod method
 
-    do if checkMethodAndSerializationTypeCompatible method serializationType then ()
-       else failwith $"{method} is not compatible with serialization type {serializationType}. Likely because it cannot have a body."
-
-    member val Path: string = path
-    member val Method = HttpMethod method
-    member val SerializationType =
-        match serializationType with
-        | ESerializationType.Json -> JsonSerialization
-        | ESerializationType.QueryString -> QueryStringSerialization
-        | _ -> invalidArg (nameof serializationType) $"'{serializationType}' is not a supported serialization type."
-
-    member __.AreMethodAndSerializationTypeCompatible = checkMethodAndSerializationTypeCompatible method serializationType
-    static member Default = EndpointDescriptionAttribute()
+[<AttributeUsage(AttributeTargets.Property)>]
+type SerializationTypeAttribute(serializationType: ESerializationType) =
+    member __.SerializationType = serializationType
 
 type Endpoint =
     {
