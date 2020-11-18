@@ -27,14 +27,17 @@ let private getDefaultSerializationType (method: string) =
 
 [<AttributeUsage(AttributeTargets.Property)>]
 type PathAttribute(path: string) =
+    inherit Attribute()
     member __.Path = path
 
 [<AttributeUsage(AttributeTargets.Property)>]
 type MethodAttribute(method: string) =
+    inherit Attribute()
     member __.Method = HttpMethod method
 
 [<AttributeUsage(AttributeTargets.Property)>]
-type SerializationTypeAttribute(serializationType: ESerializationType) =
+type SerializationOverrideAttribute(serializationType: ESerializationType) =
+    inherit Attribute()
     member __.SerializationType = serializationType
 
 type Endpoint =
