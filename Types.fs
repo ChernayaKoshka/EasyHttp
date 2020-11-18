@@ -37,6 +37,7 @@ type Endpoint =
         Path: string
         Method: HttpMethod
         SerializationType: SerializationType
+        FunctionType: Type
         ArgumentType: Type
         ReturnType: Type
     }
