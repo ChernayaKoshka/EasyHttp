@@ -13,18 +13,6 @@ type SerializationType =
     | JsonSerialization
     | QueryStringSerialization
 
-let private methodAllowsBody (method: string) =
-        match method.ToLowerInvariant() with
-        | "get" | "delete" | "trace" | "options" | "head" -> false
-        | _ -> true
-
-let private checkMethodAndSerializationTypeCompatible method serializationType =
-    serializationType = ESerializationType.Json && methodAllowsBody method
-
-let private getDefaultSerializationType (method: string) =
-        if methodAllowsBody method then ESerializationType.Json
-        else ESerializationType.QueryString
-
 [<AttributeUsage(AttributeTargets.Property)>]
 type PathAttribute(path: string) =
     inherit Attribute()
@@ -38,7 +26,11 @@ type MethodAttribute(method: string) =
 [<AttributeUsage(AttributeTargets.Property)>]
 type SerializationOverrideAttribute(serializationType: ESerializationType) =
     inherit Attribute()
-    member __.SerializationType = serializationType
+    member __.SerializationType =
+        match serializationType with
+        | ESerializationType.Json -> JsonSerialization
+        | ESerializationType.QueryString -> QueryStringSerialization
+        | _ -> invalidArg (nameof serializationType) $"'{serializationType}' is not a supported serialization type."
 
 type Endpoint =
     {
