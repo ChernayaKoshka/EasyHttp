@@ -50,6 +50,11 @@ type EndpointDescriptionAttribute(?path: string, ?method: string, ?serialization
     do if checkMethodAndSerializationTypeCompatible method serializationType then ()
        else failwith $"{method} is not compatible with serialization type {serializationType}. Likely because it cannot have a body."
 
+    new(?path: string, ?method: EHttpMethod, ?serializationType: ESerializationType) =
+        EndpointDescriptionAttribute(?path = path, ?method = Option.map string method, ?serializationType = serializationType)
+
+    new() = EndpointDescriptionAttribute()
+
     member val Path: string = path
     member val Method = HttpMethod method
     member val SerializationType =
