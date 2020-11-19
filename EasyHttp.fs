@@ -88,7 +88,7 @@ type private Http private () =
 
 let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.NonPublic ||| BindingFlags.Static)
 
-let makeApi<'Definition>(host: Uri, configureClient: HttpClient -> HttpClient) =
+let makeApi<'Definition>(host: Uri) (configureClient: HttpClient -> HttpClient) =
     let t = typeof<'Definition>
     if t |> FSharpType.IsRecord |> not then
         Error $"{t.AssemblyQualifiedName} must be a record."

@@ -8,51 +8,53 @@ open System.Reflection
 open FSharp.Reflection
 open System.Net
 
-let internal getRecordFields (recordType: Type) =
-    if FSharpType.IsRecord(recordType) then
-        recordType
-        |> FSharpType.GetRecordFields
-        |> Ok
-    else
-        Error "Only records/unit are supported for query string (de)serialization."
-
-let internal isOptionType (typ: Type) =
-    typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<Option<_>>
-
-let internal isTypeSerializable (typ: Type) =
-    let rec checkType (checkingOptionCase: bool) (typ: Type) =
-        if typ.IsPrimitive || typ = typeof<string> then
-            true
-        // keeping code block like this for clarity (hopefully)
-        // fsharplint:disable-next-line Hints
-        else if
-            // don't want to return a false positive on a type like Option<Option<string>>
-            not checkingOptionCase
-            && isOptionType typ
-            && checkType true (typ.GetGenericArguments().[0]) then
-            true
+module Utils =
+    let getRecordFields (recordType: Type) =
+        if FSharpType.IsRecord(recordType) then
+            recordType
+            |> FSharpType.GetRecordFields
+            |> Ok
         else
-            false
-    checkType false typ
+            Error "Only records/unit are supported for query string (de)serialization."
 
-let internal areConstraintsSatisfied (recordType: Type) (props: PropertyInfo array) =
-    let satisfied =
-        props
-        |> Array.map (fun prop ->
-            (prop, isTypeSerializable prop.PropertyType)
-        )
-    if Array.forall (snd >> (=) true) satisfied then
-        Ok props
-    else
-        satisfied
-        |> Array.filter (snd >> (=) false)
-        |> Array.map (fun (prop, _) -> prop.Name)
-        |> String.concat ", "
-        |> sprintf "All properties of type '%s' must be primitives or string. Offending properties as follows: %s" recordType.AssemblyQualifiedName
-        |> Error
+    let isOptionType (typ: Type) =
+        typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<Option<_>>
+
+    let isTypeSerializable (typ: Type) =
+        let rec checkType (checkingOptionCase: bool) (typ: Type) =
+            if typ.IsPrimitive || typ = typeof<string> then
+                true
+            // keeping code block like this for clarity (hopefully)
+            // fsharplint:disable-next-line Hints
+            else if
+                // don't want to return a false positive on a type like Option<Option<string>>
+                not checkingOptionCase
+                && isOptionType typ
+                && checkType true (typ.GetGenericArguments().[0]) then
+                true
+            else
+                false
+        checkType false typ
+
+    let areConstraintsSatisfied (recordType: Type) (props: PropertyInfo array) =
+        let satisfied =
+            props
+            |> Array.map (fun prop ->
+                (prop, isTypeSerializable prop.PropertyType)
+            )
+        if Array.forall (snd >> (=) true) satisfied then
+            Ok props
+        else
+            satisfied
+            |> Array.filter (snd >> (=) false)
+            |> Array.map (fun (prop, _) -> prop.Name)
+            |> String.concat ", "
+            |> sprintf "All properties of type '%s' must be primitives or string. Offending properties as follows: %s" recordType.AssemblyQualifiedName
+            |> Error
+open Utils
 
 // TODO: Purely for organization, could be moved up?
-module private Serialize =
+module Serialize =
     // TODO: Could be replaced with Microsoft.AspNetCore.Http.QueryString. Will that play nice with WASM?
     let toQueryString (vals: (string * string) seq) =
         vals
@@ -100,7 +102,7 @@ module private Serialize =
             |> Result.map toQueryString
 
 // TODO: Purely for organization, could be moved up?
-module private Deserialize =
+module Deserialize =
     // caching on startup so we don't keep making calls to GetUnionCases/MakeUnion every time
     // precomputing constructors
     let primOptCtors =
@@ -183,7 +185,7 @@ module private Deserialize =
         |> Result.bind (areConstraintsSatisfied t)
         |> Result.bind (fillPropertyValues<'T> values)
 
-let serialize = Serialize.serialize
+let serialize (o: obj) = Serialize.serialize o
 
 // completely unnecessary for our purposes, but I'm leaving it here in case it becomes useful in the future
 let deserialize<'T> = Deserialize.deserialize<'T>

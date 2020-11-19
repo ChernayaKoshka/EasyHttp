@@ -3,8 +3,13 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Types.fsi" />
     <Compile Include="Types.fs" />
+
+    <Compile Include="QueryStringSerializer.fsi" />
     <Compile Include="QueryStringSerializer.fs" />
+
+    <Compile Include="EasyHttp.fsi" />
     <Compile Include="EasyHttp.fs" />
   </ItemGroup>
 </Project>
