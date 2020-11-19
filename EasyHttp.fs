@@ -1,4 +1,4 @@
-[<AutoOpen>]
+﻿[<AutoOpen>]
 module EasyHttp.EasyHttp
 
 open System
@@ -85,8 +85,11 @@ type private Http private () =
 
 let private sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.NonPublic ||| BindingFlags.Static)
 
-let makeApi<'Definition>(host: Uri) (configureClient: HttpClient -> HttpClient) =
-    let t = typeof<'Definition>
+let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > (configureClient: HttpClient -> HttpClient) =
+    let t = typeof< ^Definition >
+    // because we're not passing in an instance of the type, we can't use SRTP syntax to access it
+    // however, SRTP have _guaranteed_ that it exists on the record! :D
+    let hostUri = t.GetProperty("BaseUri").GetValue(null) :?> Uri
     if t |> FSharpType.IsRecord |> not then
         Error $"{t.AssemblyQualifiedName} must be a record."
     else
@@ -104,12 +107,12 @@ let makeApi<'Definition>(host: Uri) (configureClient: HttpClient -> HttpClient) 
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    let result = sendMethodInfo.Invoke(null, [|client; e.Method; e.SerializationType; Uri(host, e.Path); arg|])
+                    let result = sendMethodInfo.Invoke(null, [|client; e.Method; e.SerializationType; Uri( hostUri, e.Path); arg|])
                     Convert.ChangeType(result, e.ReturnType)
             )
         )
         |> Array.ofList
 
-    FSharpValue.MakeRecord(typeof<'Definition>, args)
-    :?> 'Definition
+    FSharpValue.MakeRecord(typeof< ^Definition >, args)
+    :?> ^Definition
     |> Ok
