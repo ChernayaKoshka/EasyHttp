@@ -61,7 +61,6 @@ let extractEndpoints (t: Type) =
 
 type private Http private () =
     static member Send<'ReturnType> (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (content: obj) =
-        printfn "invoked"
         let response =
             match serializationType with
             | JsonSerialization ->
@@ -82,11 +81,9 @@ type private Http private () =
             box () :?> 'ReturnType
         else
             use reader = new StreamReader(response.Content.ReadAsStream())
-            let data = reader.ReadToEnd()
-            printfn "%A" data
-            JsonSerializer.Deserialize<'ReturnType>(data)
+            JsonSerializer.Deserialize<'ReturnType>(reader.ReadToEnd())
 
-let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.NonPublic ||| BindingFlags.Static)
+let private sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.NonPublic ||| BindingFlags.Static)
 
 let makeApi<'Definition>(host: Uri) (configureClient: HttpClient -> HttpClient) =
     let t = typeof<'Definition>
