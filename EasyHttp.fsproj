@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Types.fs" />
+    <Compile Include="QueryStringSerializer.fs" />
     <Compile Include="EasyHttp.fs" />
   </ItemGroup>
-
 </Project>
