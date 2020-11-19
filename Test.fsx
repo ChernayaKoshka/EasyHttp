@@ -27,8 +27,10 @@ type TestRecord =
         [<Path("/some/other/endpoint")>]
         UnitFunction: unit -> unit
     }
+    with
+        static member BaseUri = Uri("http://localhost:8080")
 
-let result = getApiDefinition<TestRecord>(Uri("http://localhost:8080"), id)
+let result = makeApi<TestRecord> id
 let result' =
     match result with
     | Ok s -> s
