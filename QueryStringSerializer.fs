@@ -184,4 +184,6 @@ module private Deserialize =
         |> Result.bind (fillPropertyValues<'T> values)
 
 let serialize = Serialize.serialize
+
+// completely unnecessary for our purposes, but I'm leaving it here in case it becomes useful in the future
 let deserialize<'T> = Deserialize.deserialize<'T>
