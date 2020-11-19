@@ -1,4 +1,4 @@
-﻿[<AutoOpen>]
+[<AutoOpen>]
 module EasyHttp.EasyHttp
 
 open System
@@ -45,7 +45,7 @@ let extractEndpoints (t: Type) =
                 else QueryStringSerialization
             getAttributeContentsOrDefault f (fun (soa: SerializationOverrideAttribute) -> soa.SerializationType) defaultSerialization
 
-        if not (serializationType = JsonSerialization && (methodAllowsBody >> not) method) then
+        if serializationType = JsonSerialization && (methodAllowsBody >> not) method then
             (endpoints, $"{f.Name}: {method} and {serializationType} are not compatible. Likely because '{method}' does not allow a body." :: errors)
         else
         {
