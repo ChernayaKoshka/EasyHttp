@@ -41,7 +41,3 @@ type Endpoint =
         ArgumentType: Type
         ReturnType: Type
     }
-
-type IApiDefinition =
-    abstract BaseUrl: string
-    abstract DefaultSerializationType: SerializationType
