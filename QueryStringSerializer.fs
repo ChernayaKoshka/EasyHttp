@@ -134,25 +134,32 @@ module private Deserialize =
         let valueMap = Map.ofArray values
         // we know that all values need to be accounted for in this case
         if FSharpType.IsRecord(t) then
-            let recordFields =
+            let recordFields, errors =
                 props
-                |> Array.map (fun prop ->
+                |> Array.fold (fun (recordFields, errors) prop ->
                     match Map.tryFind prop.Name valueMap, isOptionType prop.PropertyType with
                     | Some value, true ->
-                        primOptCtors.[prop.PropertyType] [| Convert.ChangeType(value, prop.PropertyType.GetGenericArguments().[0]) |]
+                        (primOptCtors.[prop.PropertyType] [| Convert.ChangeType(value, prop.PropertyType.GetGenericArguments().[0]) |] :: recordFields, errors)
                     | Some value, false ->
-                        Convert.ChangeType(value, prop.PropertyType)
+                        (Convert.ChangeType(value, prop.PropertyType) :: recordFields, errors)
                     | None, true ->
-                        box None
+                        (box None :: recordFields, errors)
                     | None, false ->
-                        raise (System.Collections.Generic.KeyNotFoundException("The given key was not present in the dictionary."))
-                )
+                        (recordFields, $"'{prop.Name}' was not found in the supplied values and was not optional." :: errors)
+                ) (List.empty, List.empty)
+                |> fun (a, b) -> List.rev a, List.rev b
+
+            if errors.Length <> 0 then
+                errors
+                |> String.concat Environment.NewLine
+                |> Error
+            else
             // TODO: could potentially cache record constructors as they come in?
-            FSharpValue.MakeRecord(t, recordFields)
+            FSharpValue.MakeRecord(t, Array.ofList recordFields)
             :?> 'T
             |> Ok
         else
-            Error "'T must be an F# Record type or unit!"
+        Error "'T must be an F# Record type or unit!"
 
     // TODO: Could be replaced with Microsoft.AspNetCore.Http.QueryString. Will that play nice with WASM?
     let fromQueryString (queryString: string) =
@@ -170,11 +177,11 @@ module private Deserialize =
         else if isNull queryString then
             Error "Query string cannot be null when the type is not unit."
         else
-            let values = fromQueryString queryString
-            t
-            |> getRecordFields
-            |> Result.bind (areConstraintsSatisfied t)
-            |> Result.bind (fillPropertyValues<'T> values)
+        let values = fromQueryString queryString
+        t
+        |> getRecordFields
+        |> Result.bind (areConstraintsSatisfied t)
+        |> Result.bind (fillPropertyValues<'T> values)
 
 let serialize = Serialize.serialize
 let deserialize<'T> = Deserialize.deserialize<'T>
