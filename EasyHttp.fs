@@ -20,16 +20,9 @@ let getAttributeContentsOrDefault (info: PropertyInfo) accessor defaultValue=
         |> accessor
 
 let methodAllowsBody (method: HttpMethod) =
-        match method.Method.ToLowerInvariant() with
-        | "get" | "delete" | "trace" | "options" | "head" -> false
-        | _ -> true
-
-let checkMethodAndSerializationTypeCompatible method serializationType =
-    not (serializationType = JsonSerialization && method |> methodAllowsBody |> not)
-
-let getDefaultSerializationType (method: HttpMethod) =
-        if methodAllowsBody method then JsonSerialization
-        else QueryStringSerialization
+    match method.Method.ToLowerInvariant() with
+    | "get" | "delete" | "trace" | "options" | "head" -> false
+    | _ -> true
 
 let extractEndpoints (t: Type) =
     t
@@ -47,22 +40,22 @@ let extractEndpoints (t: Type) =
         let path = getAttributeContentsOrDefault f (fun (pa: PathAttribute) -> pa.Path) String.Empty
         let method = getAttributeContentsOrDefault f (fun (ma: MethodAttribute)-> ma.Method) HttpMethod.Post
         let serializationType =
-            method
-            |> getDefaultSerializationType
-            |> getAttributeContentsOrDefault f (fun (soa: SerializationOverrideAttribute) -> soa.SerializationType)
+            let defaultSerialization =
+                if methodAllowsBody method then JsonSerialization
+                else QueryStringSerialization
+            getAttributeContentsOrDefault f (fun (soa: SerializationOverrideAttribute) -> soa.SerializationType) defaultSerialization
 
-        if checkMethodAndSerializationTypeCompatible method serializationType |> not then
+        if not (serializationType = JsonSerialization && (methodAllowsBody >> not) method) then
             (endpoints, $"{f.Name}: {method} and {serializationType} are not compatible. Likely because '{method}' does not allow a body." :: errors)
         else
-            (
-            {
-                Path = path
-                Method = method
-                SerializationType = serializationType
-                FunctionType = f.PropertyType
-                ArgumentType = argType
-                ReturnType = returnType
-            } :: endpoints, errors)
+        {
+            Path = path
+            Method = method
+            SerializationType = serializationType
+            FunctionType = f.PropertyType
+            ArgumentType = argType
+            ReturnType = returnType
+        } :: endpoints, errors
     ) (List.empty, List.empty)
     |> fun (a, b) -> (List.rev a, List.rev b)
 
@@ -110,14 +103,12 @@ let getApiDefinition<'Definition>(host: Uri, configureClient: HttpClient -> Http
     let args =
         endpoints
         |> List.map (fun e ->
+            let sendMethodInfo = sendMethodInfo.MakeGenericMethod(e.ReturnType)
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    Convert.ChangeType(
-                        sendMethodInfo
-                            .MakeGenericMethod(e.ReturnType)
-                            .Invoke(null, [|client; e.Method; e.SerializationType; Uri(host, e.Path); arg|]),
-                        e.ReturnType)
+                    let result = sendMethodInfo.Invoke(null, [|client; e.Method; e.SerializationType; Uri(host, e.Path); arg|])
+                    Convert.ChangeType(result, e.ReturnType)
             )
         )
         |> Array.ofList
