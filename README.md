@@ -1,7 +1,7 @@
 [![NuGet Badge](https://buildstats.info/nuget/FsEasyHttp)](https://www.nuget.org/packages/FsEasyHttp/)
 
 ## What?
-This package was/is designed to fill in a Remoting gap that the amazing project [Bolero](github.com/fsbolero/Bolero) has. That gap being that the remoting doesn't work unless it is defined on the server as well. This means that integrating Bolero into your server/client meant redefining or reworking your APIs. This project bridges that gap by functioning similarly to Bolero's Remote API definitions, but instead can hit any arbitrary HTTP-based API instead.
+This package was/is designed to fill in a Remoting gap that the amazing project [Bolero](github.com/fsbolero/Bolero) has. That gap being that the remoting doesn't work unless it is defined on the server as well. This means that integrating Bolero into your server/client meant redefining or reworking your APIs. This project bridges that gap by functioning similarly to Bolero's Remote API definitions, but instead can hit any arbitrary HTTP-based API.
 
 ## Enough talk, let's see some documentation!
 All of the public (and most of the private) API exposed by the package is available through XML documentation (viewable through intellisense). But, here's a quick example using my [echo server](https://github.com/ChernayaKoshka/EchoServer) as an endpoint (any server with a reachable API will do).
@@ -48,7 +48,7 @@ Let's break that down, shall we?:
    1. `ESerializationType.Json`, this will serialize the function input to JSON
    2. `ESerializationType.QueryString`, this will serialize the function input to a query string (ie: `?key1=val1&key2=val2`). This method is inflexible and only supports primitive/option types.
 
-   It should be noted that the default serialization method is JSON
+   It should be noted that the default serialization method for HTTP methods that allow a body is JSON. Any that do not allow a body default to query string serialization.
 4. `Method` is an attribute that defines the HTTP Verb to use when making a request. It should be noted that the default method is `POST`
 5. `Path` is an attribute that defines any additional pathing to use on top of the `BaseUri` provided.
 
