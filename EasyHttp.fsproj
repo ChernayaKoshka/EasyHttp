@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.0.2</Version>
+    <Version>0.0.3</Version>
     <Authors>ChernayaKoshka</Authors>
     <Product>EasyHttp</Product>
     <PackageId>FsEasyHttp</PackageId>
@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>Http, F#</PackageTags>
-    <PackageReleaseNotes>Release</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix null reference exception</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
