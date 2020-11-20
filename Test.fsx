@@ -16,10 +16,10 @@ type Response =
 type TestRecord =
     {
         [<SerializationOverride(ESerializationType.QueryString)>]
-        Test: {| someNumber: int |} -> Response
+        TestQueryString: {| someNumber: int |} -> Response
 
         [<SerializationOverride(serializationType = ESerializationType.Json)>]
-        TestQueryString: {| someNumber: int |} -> Response
+        Test: {| someNumber: int |} -> Response
 
         [<Method("DELETE")>]
         TestDelete: unit -> Response
@@ -35,4 +35,15 @@ let result' =
     match result with
     | Ok s -> s
     | Error err -> failwith err
+
+result'.TestQueryString {| someNumber = 1000 |}
+|> printfn "TestQueryString result:\n%A"
+
+result'.Test {| someNumber = 1000 |}
+|> printfn "Test result:\n%A"
+
+result'.TestDelete()
+|> printfn "TestDelete result:\n%A"
+
 result'.UnitFunction()
+|> printfn "UnitFunction result:\n%A"
