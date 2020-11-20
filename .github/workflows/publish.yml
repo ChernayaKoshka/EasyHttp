@@ -17,7 +17,7 @@ jobs:
 
       # Pack
       - name: Pack project
-      - run: dotnet pack
+        run: dotnet pack
 
       # Publish
       - name: publish on version change
