@@ -1,6 +1,9 @@
 // TODO: Techncially, query strings can contain multiple values.
 // For example, Value=1,2,3
 // Should we allow `seq` serializaiton/deserialization in this case?
+/// <Summary>
+/// Contains the necessary functions for (de)serializing from/to a query string
+/// </Summary>
 module EasyHttp.QueryStringSerializer
 
 open System
@@ -8,7 +11,15 @@ open System.Reflection
 open FSharp.Reflection
 open System.Net
 
+/// <Summary>
+/// Contains a variety of reflection helpers to facilitate serialization/deserialization
+/// </Summary>
 module Utils =
+    /// <summary>
+    /// Gets the record fields if the provided record type is a valid F# record.
+    /// </summary>
+    /// <param name="recordType">The record type to retrieve the fields from.</param>
+    /// <returns>`Result<PropertyInfo array, string>`</returns>
     let getRecordFields (recordType: Type) =
         if FSharpType.IsRecord(recordType) then
             recordType
@@ -17,9 +28,19 @@ module Utils =
         else
             Error "Only records/unit are supported for query string (de)serialization."
 
+    /// <summary>
+    /// Returns true if the provided `typ` is an `Option<_>`
+    /// </summary>
+    /// <param name="typ">The type to check</param>
+    /// <returns/>
     let isOptionType (typ: Type) =
         typ.IsGenericType && typ.GetGenericTypeDefinition() = typedefof<Option<_>>
 
+    /// <summary>
+    /// Checks if the provided type can be serialized to a query string.
+    /// </summary>
+    /// <param name="typ">The typ to check</param>
+    /// <returns/>
     let isTypeSerializable (typ: Type) =
         let rec checkType (checkingOptionCase: bool) (typ: Type) =
             if typ.IsPrimitive || typ = typeof<string> then
@@ -36,6 +57,12 @@ module Utils =
                 false
         checkType false typ
 
+    /// <summary>
+    /// Verifies all of the provided `PropertyInfo`s are serializable.
+    /// </summary>
+    /// <param name="recordType">The record type to check</param>
+    /// <param name="props">A list of properties on the record to check</param>
+    /// <returns/>
     let areConstraintsSatisfied (recordType: Type) (props: PropertyInfo array) =
         let satisfied =
             props
@@ -54,8 +81,16 @@ module Utils =
 open Utils
 
 // TODO: Purely for organization, could be moved up?
+/// <Summary>
+/// Contains a variety of functions relevant to query string serialization. This is/should remain hidden in the signature file as it is an implementation detail.
+/// </Summary>
 module Serialize =
     // TODO: Could be replaced with Microsoft.AspNetCore.Http.QueryString. Will that play nice with WASM?
+    /// <summary>
+    /// Using the provided tuples, it will create a query string.
+    /// </summary>
+    /// <param name="vals">The provided tuples to create a query string from.</param>
+    /// <returns>A query string in the format of `?key1=val1&key2=val2`</returns>
     let toQueryString (vals: (string * string) seq) =
         vals
         |> Seq.map (fun (param, value) ->
@@ -63,27 +98,44 @@ module Serialize =
         |> String.concat "&"
         |> sprintf "?%s"
 
-    let extractOptionValue (instance: obj) (prop: PropertyInfo) =
-        let value = prop.GetValue(instance)
-        if isNull value then
+    /// <summary>
+    /// Extracts the inner value of an `Option<_>`
+    /// </summary>
+    /// <param name="optionType">The type definition of the option</param>
+    /// <param name="instance">An instance of the option type</param>
+    /// <returns>`Some obj` if the option is `Some`, otherwise `None`.</returns>
+    let extractOptionValue (optionType: Type) (instance: obj) =
+        if isNull instance then
             None
         else
-            FSharpValue.GetUnionFields(value, prop.PropertyType)
+            FSharpValue.GetUnionFields(instance, optionType)
             |> snd
             |> Array.head
             |> Some
 
+    /// <summary>
+    /// Extracts all of the values from the `obj` using the provided `PropertyInfo`s
+    /// </summary>
+    /// <param name="instance">The object to retrieve values from.</param>
+    /// <param name="props">An array of properties to extract from the provided `instance`.</param>
+    /// <returns>A tuple of `(property name, property value to string)`</returns>
     let extractPropertyValues (instance: obj) (props: PropertyInfo array) =
         props
         |> Array.choose (fun prop ->
+            let value = prop.GetValue(instance)
             if isOptionType prop.PropertyType then
-                prop
-                |> extractOptionValue instance
+                value
+                |> extractOptionValue prop.PropertyType
                 |> Option.map (fun value -> (prop.Name, string value))
             else
-                Some (prop.Name, string (prop.GetValue(instance)))
+                Some (prop.Name, string value)
         )
 
+    /// <summary>
+    /// Serializes the provided `obj` to a query string.
+    /// </summary>
+    /// <param name="toSerialize">The object to serialize</param>
+    /// <returns>`Result<string, string>` depending on whether or not serialization was successful.</returns>
     let serialize (toSerialize: obj) =
         // has the potential to parse a serialize `None` value successfully
         // because the representation of unit/None are both `null`. This makes it
@@ -102,9 +154,16 @@ module Serialize =
             |> Result.map toQueryString
 
 // TODO: Purely for organization, could be moved up?
+/// <Summary>
+/// Contains a variety of functions relevant to query string deserialization. This is/should remain hidden in the signature file as it is an implementation detail.
+/// </Summary>
 module Deserialize =
     // caching on startup so we don't keep making calls to GetUnionCases/MakeUnion every time
     // precomputing constructors
+
+    /// <summary>
+    /// Precomputed option constructors for primitive/string types.
+    /// </summary>
     let primOptCtors =
         [
             typeof<bool option>
@@ -131,6 +190,13 @@ module Deserialize =
         )
         |> dict
 
+    /// <summary>
+    /// Fills the provided record type's values using the provided values / `PropertyInfo`s
+    /// </summary>
+    /// <param name="values">An array of tuples of `(property name, string value)` that will be used to construct the record from.</param>
+    /// <param name="props">The properties of the provided record to search for and populate.</param>
+    /// <typeparam name="'T">The type of record to construct</typeparam>
+    /// <returns>`Result<'T, string>` depending on whether or not the record was successfully constructed.</returns>
     let fillPropertyValues<'T> (values: (string * string) array) (props: PropertyInfo array) =
         let t = typeof<'T>
         let valueMap = Map.ofArray values
@@ -164,6 +230,11 @@ module Deserialize =
         Error "'T must be an F# Record type or unit!"
 
     // TODO: Could be replaced with Microsoft.AspNetCore.Http.QueryString. Will that play nice with WASM?
+    /// <summary>
+    /// Splits and decodes a provided query string into its components.
+    /// </summary>
+    /// <param name="queryString">THe query string to split up</param>
+    /// <returns>An array of tuples of `(key, value)`</returns>
     let fromQueryString (queryString: string) =
         queryString.TrimStart('?').Split('&')
         |> Array.map (fun pair ->
@@ -171,6 +242,12 @@ module Deserialize =
             WebUtility.UrlDecode(query), WebUtility.UrlDecode(value)
         )
 
+    /// <summary>
+    /// Deserializes the query string into the provided record type.
+    /// </summary>
+    /// <param name="queryString">The query string containing values to deserialize from.</param>
+    /// <typeparam name="'T">The record type to return if deserialization is successful.</typeparam>
+    /// <returns>`Result<'T, string>` depending on if deserialization was successful or not.</returns>
     let deserialize<'T>(queryString: string) =
         let t = typeof<'T>
         if t = typeof<unit> then
@@ -185,7 +262,19 @@ module Deserialize =
         |> Result.bind (areConstraintsSatisfied t)
         |> Result.bind (fillPropertyValues<'T> values)
 
+/// <summary>
+/// Serializes the provided `obj` to a query string.
+/// </summary>
+/// <param name="toSerialize">The object to serialize</param>
+/// <returns>`Result<string, string>` depending on whether or not serialization was successful.</returns>
 let serialize (o: obj) = Serialize.serialize o
 
+
+/// <summary>
+/// Deserializes the query string into the provided record type.
+/// </summary>
+/// <param name="queryString">The query string containing values to deserialize from.</param>
+/// <typeparam name="'T">The record type to return if deserialization is successful.</typeparam>
+/// <returns>`Result<'T, string>` depending on if deserialization was successful or not.</returns>
 // completely unnecessary for our purposes, but I'm leaving it here in case it becomes useful in the future
 let deserialize<'T> = Deserialize.deserialize<'T>
