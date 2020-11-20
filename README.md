@@ -41,7 +41,7 @@ type TestRecord =
 
 Let's break that down, shall we?:
 
-1. All of the _inputs_ are either `unit` or an anonymous record.
+1. All of the _inputs_ are either `unit` or an anonymous record in this example. Named records work as well, but the anonymous record syntax may be more convenient.
    * This is because (currently), the only accepted function definitions have a single input (a record or unit type) and a single output (any JSON serializable object). This choice was made in order to support JSON payloads and query string serialization.
 2. The _name_ of a function is purely for the caller's benefit
 3. `SerializationOverride` is an attribute that takes an enum with one of two values:
@@ -49,6 +49,7 @@ Let's break that down, shall we?:
    2. `ESerializationType.QueryString`, this will serialize the function input to a query string (ie: `?key1=val1&key2=val2`). This method is inflexible and only supports primitive/option types.
 
    It should be noted that the default serialization method for HTTP methods that allow a body is JSON. Any that do not allow a body default to query string serialization.
+   In addition, if a defined function's return type is `unit`, it will return `unit` without reading the body of the response.
 4. `Method` is an attribute that defines the HTTP Verb to use when making a request. It should be noted that the default method is `POST`
 5. `Path` is an attribute that defines any additional pathing to use on top of the `BaseUri` provided.
 
