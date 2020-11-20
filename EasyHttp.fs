@@ -85,7 +85,7 @@ module Internal =
                 use reader = new StreamReader(response.Content.ReadAsStream())
                 JsonSerializer.Deserialize<'ReturnType>(reader.ReadToEnd())
 
-    let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.NonPublic ||| BindingFlags.Static)
+    let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send)
 
 #nowarn "44" // This construct is deprecated.
 open Internal
