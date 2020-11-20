@@ -3,6 +3,23 @@
     <TargetFramework>net5.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>0.0.1</Version>
+    <Authors>ChernayaKoshka</Authors>
+    <Product>EasyHttp</Product>
+    <PackageId>EasyHttp</PackageId>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Description>Simple library for defining an API through an F# record and accessing it normally. </Description>
+    <Copyright>ChernayaKoshka and contributors</Copyright>
+    <PackageLicense>https://github.com/ChernayaKoshka/EasyHttp/blob/main/LICENSE.md</PackageLicense>
+    <PackageProjectUrl>https://github.com/ChernayaKoshka/EasyHttpL</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <PackageTags>Http, F#</PackageTags>
+    <PackageReleaseNotes>Release</PackageReleaseNotes>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Types.fsi" />
     <Compile Include="Types.fs" />
