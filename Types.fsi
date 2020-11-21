@@ -13,7 +13,6 @@ open System.Net.Http
 /// </Summary>
 type ESerializationType =
     | Json        = 0
-    | QueryString = 1
     | PathString  = 2
 
 /// <Summary>
@@ -21,7 +20,6 @@ type ESerializationType =
 /// </Summary>
 type SerializationType =
     | JsonSerialization
-    | QueryStringSerialization
     | PathStringSerialization
 
 /// <Summary>
