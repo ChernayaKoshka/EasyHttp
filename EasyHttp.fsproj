@@ -24,8 +24,12 @@
     <Compile Include="Types.fsi" />
     <Compile Include="Types.fs" />
 
-    <Compile Include="QueryStringSerializer.fsi" />
-    <Compile Include="QueryStringSerializer.fs" />
+    <Compile Include="Serializers/Utils.fsi" />
+    <Compile Include="Serializers/Utils.fs" />
+    <Compile Include="Serializers/PathString.fsi" />
+    <Compile Include="Serializers/PathString.fs" />
+    <Compile Include="Serializers/QueryString.fsi" />
+    <Compile Include="Serializers/QueryString.fs" />
 
     <Compile Include="EasyHttp.fsi" />
     <Compile Include="EasyHttp.fs" />
