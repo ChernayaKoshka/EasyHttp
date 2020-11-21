@@ -62,11 +62,15 @@ val areConstraintsSatisfied:
 /// </summary>
 /// <param name="instance">The object to retrieve values from.</param>
 /// <param name="props">An array of properties to extract from the provided `instance`.</param>
-/// <returns>A tuple of `(property name, property value to string)`</returns>
+/// <returns>
+/// A tuple of `string * string`
+/// The first field is the property name.
+/// The second field is a `string option`, `None` if it was optional and `None` in the record, `Some string` if it was either not an option or was an option with a value.
+/// </returns>
 val extractPropertyValues:
     instance: obj ->
     props   : PropertyInfo array
-        -> (string * string) array
+        -> (string * string option) array
 
 /// <summary>
 /// Fills the provided record type's values using the provided values / `PropertyInfo`s
@@ -89,7 +93,7 @@ val fillPropertyValues:
 val extractRecordValues:
     instance: obj  ->
     typ     : Type
-        -> Result<(string * string) array,string>
+        -> Result<(string * string option) array, string>
 
 /// <summary>
 /// Using the provided tuples, it will create a query string.
@@ -97,5 +101,5 @@ val extractRecordValues:
 /// <param name="vals">The provided tuples to create a query string from.</param>
 /// <returns>A query string in the format of `?key1=val1&key2=val2`</returns>
 val toQueryString:
-    vals: seq<string * string>
+    vals: seq<string * string option>
         -> string

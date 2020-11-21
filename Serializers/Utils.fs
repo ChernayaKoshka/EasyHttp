@@ -60,14 +60,15 @@ let areConstraintsSatisfied (recordType: Type) (props: PropertyInfo array) =
 
 let extractPropertyValues (instance: obj) (props: PropertyInfo array) =
     props
-    |> Array.choose (fun prop ->
+    |> Array.map (fun prop ->
         let value = prop.GetValue(instance)
         if isOptionType prop.PropertyType then
             value
             |> extractOptionValue prop.PropertyType
-            |> Option.map (fun value -> (prop.Name, string value))
+            |> Option.map string
+            |> fun opt -> (prop.Name, opt)
         else
-            Some (prop.Name, string value)
+            (prop.Name, Some (string value))
     )
 
 // caching on startup so we don't keep making calls to GetUnionCases/MakeUnion every time
@@ -141,9 +142,13 @@ let extractRecordValues (instance: obj) (typ: Type) =
     |> Result.map (extractPropertyValues instance)
 
 // TODO: Could be replaced with Microsoft.AspNetCore.Http.QueryString. Will that play nice with WASM?
-let toQueryString (vals: (string * string) seq) =
+let toQueryString (vals: (string * string option) seq) =
     vals
-    |> Seq.map (fun (param, value) ->
-        sprintf "%s=%s" (WebUtility.UrlEncode(param)) (WebUtility.UrlEncode(value)))
+    |> Seq.choose (fun (param, value) ->
+        value
+        |> Option.map (fun value ->
+            sprintf "%s=%s" (WebUtility.UrlEncode(param)) (WebUtility.UrlEncode(value))
+        )
+    )
     |> String.concat "&"
     |> sprintf "?%s"
