@@ -51,32 +51,31 @@ type TestRecord =
     with
         static member BaseUri = Uri("http://localhost:8080")
 
-let result = makeApi<TestRecord> id
-let result' =
-    match result with
+let result =
+    match makeApi<TestRecord> id with
     | Ok s -> s
     | Error err -> failwith err
 
-result'.TestJson {| someNumber = 1000 |}
+result.TestJson {| someNumber = 1000 |}
 |> printfn "Test result:\n%A\n"
 
-result'.TestQueryString {| someNumber = 1000 |}
+result.TestQueryString {| someNumber = 1000 |}
 |> printfn "TestQueryString result:\n%A\n"
 
 // [<Path("{someData}/{someNumber}{!query!}")>]
-result'.TestPathString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = "queryParamValue2" |}
+result.TestPathString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = "queryParamValue2" |}
 |> printfn "TestPathString result:\n%A\n"
 
 // [<Path("/some/endpoint/{!ordered!}")>]
-result'.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quickly qooler data" }
+result.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quickly qooler data" }
 |> printfn "TestOrderedPathString result:\n%A\n"
 
 // [<Path("{!ordered!}")>]
-result'.TestOrderedPathStringAnonRecord {| ZData = "ZData"; AData = "AData" |}
+result.TestOrderedPathStringAnonRecord {| ZData = "ZData"; AData = "AData" |}
 |> printfn "TestOrderedPathStringAnonRecord result:\n%A\n"
 
-result'.TestDelete()
+result.TestDelete()
 |> printfn "TestDelete result:\n%A\n"
 
-result'.UnitFunction()
+result.UnitFunction()
 |> printfn "UnitFunction result:\n%A\n"
