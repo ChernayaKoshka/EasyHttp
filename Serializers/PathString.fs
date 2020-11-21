@@ -8,6 +8,7 @@ open System.Collections.Concurrent
 open System.Reflection
 open FSharp.Reflection
 open System.Text.RegularExpressions
+open System.Net
 
 (*
     NOTES:
@@ -50,7 +51,7 @@ let populatePath (pathStringFormat: string) (values: (string * string) array) =
         if pathStringFormat.Contains(OrderedPathString) then
             let ordered =
                 values
-                |> Array.map snd
+                |> Array.map (snd >> WebUtility.UrlEncode)
                 |> String.concat "/"
             pathStringFormat.Replace(OrderedPathString, ordered)
         else
@@ -69,7 +70,7 @@ let populatePath (pathStringFormat: string) (values: (string * string) array) =
             let populated =
                 pathValues
                 |> Array.fold (fun (pathString: string) (name, value) ->
-                    pathString.Replace($"{{{name}}}", value)
+                    pathString.Replace($"{{{name}}}", WebUtility.UrlEncode(value))
                 ) pathStringFormat
 
             if queryStringValues.Length = 0 || populated.Contains(QueryStringCapture) |> not then
