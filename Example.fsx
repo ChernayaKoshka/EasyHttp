@@ -71,7 +71,7 @@ result.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quic
 |> printfn "TestOrderedPathString result:\n%A\n"
 
 // [<Path("{!ordered!}")>]
-result.TestOrderedPathStringAnonRecord {| ZData = "ZData"; AData = "AData" |}
+result.TestOrderedPathStringAnonRecord {| ZData = "First"; AData = "Second" |}
 |> printfn "TestOrderedPathStringAnonRecord result:\n%A\n"
 
 result.TestDelete()
