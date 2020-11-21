@@ -1,3 +1,4 @@
+[<AutoOpen>]
 module EasyHttp.EasyHttp
 open System
 open System.Reflection
@@ -56,7 +57,14 @@ module Internal =
         /// <param name="content">The content to serialize</param>
         /// <typeparam name="'ReturnType">The expected return type of the request (assumed JSON)</typeparam>
         /// <returns>Returns the response deserialized as JSON to the provided 'ReturnType</returns>
-        static member Send: client: HttpClient-> method: HttpMethod-> serializationType: SerializationType-> requestUri: Uri-> content: obj -> 'ReturnType
+        static member Send:
+            client: HttpClient ->
+            method: HttpMethod ->
+            serializationType: SerializationType ->
+            requestUri: Uri ->
+            uriFragment: string ->
+            content: obj
+                -> 'ReturnType
 
     /// <summary>
     /// Holds the `Http.Send` method info, to be used later to dynamically create generic versions and invoke them.

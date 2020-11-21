@@ -9,6 +9,7 @@ open System.Text.Json
 open FSharp.Reflection
 open System.Reflection
 open System.Net.Http
+open EasyHttp.Serializers
 
 [<Obsolete("This module is only exposed to support makeApi being inline in order to use SRTP. This is an implementation detail and should not be utilized.")>]
 /// Do not use.
@@ -62,7 +63,7 @@ module Internal =
         ) (List.empty, List.empty)
         |> fun (a, b) -> (List.rev a, List.rev b)
     type Http private () =
-        static member Send<'ReturnType> (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (content: obj) =
+        static member Send<'ReturnType> (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj) =
             let response =
                 match serializationType with
                 | JsonSerialization ->
@@ -73,10 +74,17 @@ module Internal =
                     )
                 | QueryStringSerialization ->
                     let queryString =
-                        match QueryStringSerializer.serialize content with
+                        match QueryString.serialize content with
                         | Ok queryString -> queryString
                         | Error error -> failwith error
                     new HttpRequestMessage(method, UriBuilder(requestUri, Query = queryString).Uri)
+                | PathStringSerialization ->
+                    let uriFragment =
+                        match PathString.serialize uriFragment content with
+                        | Ok fragment -> fragment
+                        | Error err -> failwith err
+                    let requestUri = Uri(requestUri, uriFragment)
+                    new HttpRequestMessage(method, requestUri)
                 |> client.Send
 
             if typeof<'ReturnType> = typeof<unit> then
@@ -112,7 +120,7 @@ let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) 
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    let result = sendMethodInfo.Invoke(null, [|client; e.Method; e.SerializationType; Uri( hostUri, e.Path); arg|])
+                    let result = sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; hostUri; e.Path; arg |])
                     Convert.ChangeType(result, e.ReturnType)
             )
         )
