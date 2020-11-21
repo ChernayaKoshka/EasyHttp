@@ -46,68 +46,99 @@ let extractPathParams =
             cache.[pathStringFormat] <- result
             result
 
-let populatePath (pathStringFormat: string) (values: (string * string) array) =
-    let pathStringFormat =
-        if pathStringFormat.Contains(OrderedPathString) then
+let inline verifyNoEmptyPathValues (values: (string * string option) array) =
+    match Array.filter (snd >> (=) None) values with
+    | [| |] ->
+        values
+        |> Array.map (fun (key, value) ->
+            (key, value.Value))
+        |> Ok
+    | emptyValues ->
+        emptyValues
+        |> Array.map (fst >> sprintf "'%s'")
+        |> String.concat ", "
+        |> sprintf "Empty path values are not supported. Offending fields follow: %s"
+        |> Error
+
+let applyOrderedPathString (pathStringFormat: string) (values: (string * string option) array) =
+    if pathStringFormat.Contains(OrderedPathString) then
+        values
+        |> verifyNoEmptyPathValues
+        |> Result.map (fun values ->
             let ordered =
                 values
                 |> Array.map (snd >> WebUtility.UrlEncode)
                 |> String.concat "/"
             pathStringFormat.Replace(OrderedPathString, ordered)
-        else
+        )
+    else
+    Ok pathStringFormat
+
+let applyQueryString (queryValues: (string * string option) array) (pathString: string) =
+    if queryValues.Length = 0 || pathString.EndsWith(QueryStringCapture) |> not then
+        pathString
+    else
+        let trimmedUri =
+            Regex
+                .Replace(
+                    pathString,
+                    $"{QueryStringCapture}$",
+                    String.Empty)
+                .TrimEnd('/')
+        trimmedUri + toQueryString queryValues
+
+let applyPathParams pathValues pathStringFormat =
+    pathValues
+    |> Array.fold (fun (pathString: string) (name, value) ->
+        pathString.Replace($"{{%s{name}}}", WebUtility.UrlEncode(value))
+    ) pathStringFormat
+
+let partitionPathAndQueryString values pathParams =
+    let pathValues, queryStringValues =
+        values
+        |> Array.partition (fun (key, value) ->
+            Array.contains key pathParams
+        )
+    pathValues
+    |> verifyNoEmptyPathValues
+    |> Result.map (fun pv -> (pv, queryStringValues))
+
+let validatePopulatedPath (pathString: string) =
+    if pathString.Contains("{!") then
+        Error $"'{pathString}' had leftover special replacement markers."
+    else if pathString.Contains("{") then
+        pathString
+        |> extractPathParams
+        |> Result.mapError (fun errStr ->
+            $"Error extracting leftover params: {errStr}"
+        )
+        |> Result.bind (
+            (Array.map (sprintf "'%s'"))
+            >> String.concat ", "
+            >> (sprintf "The following parameters were missing from the record: %s")
+            >> Error)
+    else if Uri.IsWellFormedUriString(pathString, UriKind.Absolute) |> not then
+        Error $"Populated uri '{pathString}' is not a well formed uri string!"
+    else
+        Ok pathString
+
+let populatePath (pathStringFormat: string) (values: (string * string option) array) =
+    applyOrderedPathString pathStringFormat values
+    |> Result.bind extractPathParams
+    |> Result.bind (partitionPathAndQueryString values)
+    |> Result.map (fun (pathParams, queryParams) ->
         pathStringFormat
-
-    pathStringFormat
-    |> extractPathParams
-    |> Result.bind (fun pathParams ->
-        let pathValues, queryStringValues =
-            values
-            |> Array.partition (fun (key, value) ->
-                Array.contains key pathParams
-            )
-
-        let pathString =
-            let populated =
-                pathValues
-                |> Array.fold (fun (pathString: string) (name, value) ->
-                    pathString.Replace($"{{{name}}}", WebUtility.UrlEncode(value))
-                ) pathStringFormat
-
-            if queryStringValues.Length = 0 || populated.EndsWith(QueryStringCapture) |> not then
-                populated
-            else
-                let trimmedUri =
-                    Regex
-                        .Replace(
-                            populated,
-                            $"{QueryStringCapture}$",
-                            String.Empty)
-                        .TrimEnd('/')
-                trimmedUri + toQueryString queryStringValues
-
-        if pathString.Contains("{!") then
-            Error $"'{pathString}' had leftover special replacement markers."
-        else if pathString.Contains("{") then
-            pathString
-            |> extractPathParams
-            |> Result.mapError (fun errStr ->
-                $"Error extracting leftover params: {errStr}"
-            )
-            |> Result.bind (
-                (Array.map (sprintf "'%s'"))
-                >> String.concat ", "
-                >> (sprintf "The following parameters were missing from the record: %s")
-                >> Error)
-        else
-            Ok pathString
+        |> applyPathParams pathParams
+        |> applyQueryString queryParams
     )
+    |> Result.bind validatePopulatedPath
 
 let serialize (pathStringFormat: string) (record: obj): Result<string, string> =
     if isNull record then
         Ok pathStringFormat
     else
         record.GetType()
-        |> extractRecordValues false record
+        |> extractRecordValues record
         |> Result.bind (populatePath pathStringFormat)
 
 let deserialize<'T> (pathStringFormat: string) (pathString: string): Result<'T, string> =
