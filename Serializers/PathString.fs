@@ -73,12 +73,21 @@ let populatePath (pathStringFormat: string) (values: (string * string) array) =
                     pathString.Replace($"{{{name}}}", WebUtility.UrlEncode(value))
                 ) pathStringFormat
 
-            if queryStringValues.Length = 0 || populated.Contains(QueryStringCapture) |> not then
+            if queryStringValues.Length = 0 || populated.EndsWith(QueryStringCapture) |> not then
                 populated
             else
-                populated.Replace(QueryStringCapture.TrimEnd('/'), toQueryString queryStringValues)
+                let trimmedUri =
+                    Regex
+                        .Replace(
+                            populated,
+                            $"{QueryStringCapture}$",
+                            String.Empty)
+                        .TrimEnd('/')
+                trimmedUri + toQueryString queryStringValues
 
-        if pathString.Contains("{") then
+        if pathString.Contains("{!") then
+            Error $"'{pathString}' had leftover special replacement markers."
+        else if pathString.Contains("{") then
             pathString
             |> extractPathParams
             |> Result.mapError (fun errStr ->
@@ -94,10 +103,12 @@ let populatePath (pathStringFormat: string) (values: (string * string) array) =
     )
 
 let serialize (pathStringFormat: string) (record: obj): Result<string, string> =
-    let t = record.GetType()
-    t
-    |> extractRecordValues false record
-    |> Result.bind (populatePath pathStringFormat)
+    if isNull record then
+        Ok pathStringFormat
+    else
+        record.GetType()
+        |> extractRecordValues false record
+        |> Result.bind (populatePath pathStringFormat)
 
 let deserialize<'T> (pathStringFormat: string) (pathString: string): Result<'T, string> =
     raise <| NotSupportedException("This is not yet supported as I am extraordinarily lazy")
