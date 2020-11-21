@@ -26,7 +26,8 @@ type TestRecord =
     {
         TestJson: {| someNumber: int |} -> Response
 
-        [<SerializationOverride(ESerializationType.QueryString)>]
+        [<SerializationOverride(ESerializationType.PathString)>]
+        [<Path("/{!query!}")>]
         TestQueryString: {| someNumber: int |} -> Response
 
         [<SerializationOverride(ESerializationType.PathString)>]
@@ -71,7 +72,7 @@ result'.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Qui
 |> printfn "TestOrderedPathString result:\n%A\n"
 
 // [<Path("{!ordered!}")>]
-result'.TestOrderedPathStringAnonRecord {| ZData = "Uh oh"; AData = "A data!" |}
+result'.TestOrderedPathStringAnonRecord {| ZData = "ZData"; AData = "AData" |}
 |> printfn "TestOrderedPathStringAnonRecord result:\n%A\n"
 
 result'.TestDelete()
