@@ -54,6 +54,7 @@ module Internal =
         /// <param name="method">The method to use.</param>
         /// <param name="serializationType">Determines how Send should serialize the provided content.</param>
         /// <param name="requestUri">The URI to make a request to</param>
+        /// <param name="uriFragment">The URI fragment from the method</param>
         /// <param name="content">The content to serialize</param>
         /// <typeparam name="'ReturnType">The expected return type of the request (assumed JSON)</typeparam>
         /// <returns>Returns the response deserialized as JSON to the provided 'ReturnType</returns>
