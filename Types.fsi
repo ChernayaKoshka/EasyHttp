@@ -14,6 +14,7 @@ open System.Net.Http
 type ESerializationType =
     | Json        = 0
     | QueryString = 1
+    | PathString  = 2
 
 /// <Summary>
 /// Contains the supported serialization types.
@@ -21,13 +22,15 @@ type ESerializationType =
 type SerializationType =
     | JsonSerialization
     | QueryStringSerialization
+    | PathStringSerialization
 
 /// <Summary>
 /// An attribute that when applied to a function, will contain an additional path fragment to use on top of the provided base path.
 /// </Summary>
 [<AttributeUsage(AttributeTargets.Property)>]
 type PathAttribute =
-    new: string -> PathAttribute
+    new: path: string
+        -> PathAttribute
     inherit Attribute
     member Path: string
 
@@ -36,7 +39,8 @@ type PathAttribute =
 /// </Summary>
 [<AttributeUsage(AttributeTargets.Property)>]
 type MethodAttribute =
-    new: string -> MethodAttribute
+    new: method: string
+        -> MethodAttribute
     inherit Attribute
     member Method: HttpMethod
 
@@ -45,7 +49,8 @@ type MethodAttribute =
 /// </Summary>
 [<AttributeUsage(AttributeTargets.Property)>]
 type SerializationOverrideAttribute =
-    new: ESerializationType -> SerializationOverrideAttribute
+    new: serializationType: ESerializationType
+        -> SerializationOverrideAttribute
     inherit Attribute
     member SerializationType: SerializationType
 
