@@ -78,10 +78,10 @@ Let's break that down, shall we?:
    It should be noted that the default serialization method for HTTP methods that allow a body is JSON. Any that do not allow a body default to path string serialization.
    In addition, if a defined function's return type is `unit`, it will return `unit` without reading the body of the response.
 4. `Method` is an attribute that defines the HTTP Verb to use when making a request. It should be noted that the default method is `POST`
-5. `Path` is an attribute that defines any additional pathing to use on top of the `BaseUri` provided. If the serialization type is `PathString`, it will also be populated with serialized values. Format/special values follow:
-   1. `{fieldName}` - Gets replaced with the corresponding record field value.
+5. `Path` is an attribute that defines any additional pathing to use on top of the `BaseUri` provided. If the serialization type is `PathString`, it will also be populated with serialized values. Format/special markers follow:
+   1. `{fieldName}` - Gets replaced with the corresponding record field value. Optional values _are not supported_ and will throw an exception.
    2. `{!ordered!}` - Simply concats the record's field's values between slashes in the order they are defined in the record. There's a [significant gotcha](#warning) with anonymous records.
-   3. `{!query!}` - Serializes the _remaining_ record fields to a query string (e.g. `?key1=val1&key2=val2`). This _must_ occur at the end of the path, or it will be ignored. In the event that this behavior is not desired, the `{fieldName}` syntax can be used instead. (e.g. `{myField}?myField={myField}` will result in `myFieldValue?myField=myFieldValue`)
+   3. `{!query!}` - Serializes the _remaining_ record fields to a query string (e.g. `?key1=val1&key2=val2`) Optional (`Option<_>`) values are supported in this case. This special marker _must_ occur at the end of the path, or it will be ignored. In the event that this behavior is not desired, the `{fieldName}` syntax can be used instead. (e.g. `{myField}?myField={myField}` will result in `myFieldValue?myField=myFieldValue`)
 
    For example, given a record of `{ Blah = "Something"; CoolNumber = 42; ANumber = 2; AString = "some cool string" }` and a `Path` of `{Blah}/{CoolNumber}{!query!}` will result in a path of `Something/32?ANumber=2&AString=some+cool+string`.
 
