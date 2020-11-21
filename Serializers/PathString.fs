@@ -93,6 +93,8 @@ let applyPathParams pathValues pathStringFormat =
         pathString.Replace($"{{%s{name}}}", WebUtility.UrlEncode(value))
     ) pathStringFormat
 
+// TODO: Support custom-added query strings. e.g. if the user passed in a string format of `{somePath}?myKey={myValue}
+// because currently, they _can_ do this, but it will kick 'Empty path values are not supported'
 let partitionPathAndQueryString values pathParams =
     let pathValues, queryStringValues =
         values
