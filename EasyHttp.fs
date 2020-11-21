@@ -79,12 +79,16 @@ module Internal =
                         | Error err -> failwith err
                     let requestUri = Uri(requestUri, uriFragment)
                     new HttpRequestMessage(method, requestUri)
-                |> client.Send
+                // no `client.Send` available in netcoreapp3.1 and Bolero hasn't released net 5 support yet
+                |> client.SendAsync
+                |> Async.AwaitTask
+                |> Async.RunSynchronously
 
             if typeof<'ReturnType> = typeof<unit> then
                 box () :?> 'ReturnType
             else
-                use reader = new StreamReader(response.Content.ReadAsStream())
+                // ditto. Apparently netcoreapp3.1 is allergic to synchronous methods.
+                use reader = new StreamReader(response.Content.ReadAsStreamAsync() |> Async.AwaitTask |> Async.RunSynchronously)
                 JsonSerializer.Deserialize<'ReturnType>(reader.ReadToEnd())
 
     let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send)
@@ -92,6 +96,7 @@ module Internal =
 #nowarn "44" // This construct is deprecated.
 open Internal
 
+// TODO: How about we verify the path doesn't have any optional values in it _before_ sending it off?
 let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > (configureClient: HttpClient -> HttpClient) =
     let t = typeof< ^Definition >
     // because we're not passing in an instance of the type, we can't use SRTP syntax to access it
