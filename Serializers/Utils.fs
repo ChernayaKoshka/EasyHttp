@@ -26,7 +26,7 @@ let extractOptionValue (optionType: Type) (instance: obj) =
         |> Array.head
         |> Some
 
-let isTypeSerializable (optionTypeSupported: bool) (typ: Type) =
+let isTypeSerializable (typ: Type) =
     let rec checkType (checkingOptionCase: bool) (typ: Type) =
         if typ.IsPrimitive || typ = typeof<string> then
             true
@@ -34,8 +34,7 @@ let isTypeSerializable (optionTypeSupported: bool) (typ: Type) =
         // fsharplint:disable-next-line Hints
         else if
             // don't want to return a false positive on a type like Option<Option<string>>
-            optionTypeSupported
-            && not checkingOptionCase
+            not checkingOptionCase
             && isOptionType typ
             && checkType true (typ.GetGenericArguments().[0]) then
             true
@@ -43,11 +42,11 @@ let isTypeSerializable (optionTypeSupported: bool) (typ: Type) =
             false
     checkType false typ
 
-let areConstraintsSatisfied (optionTypeSupported: bool) (recordType: Type) (props: PropertyInfo array) =
+let areConstraintsSatisfied (recordType: Type) (props: PropertyInfo array) =
     let satisfied =
         props
         |> Array.map (fun prop ->
-            (prop, isTypeSerializable optionTypeSupported prop.PropertyType)
+            (prop, isTypeSerializable prop.PropertyType)
         )
     if Array.forall (snd >> (=) true) satisfied then
         Ok props
@@ -56,10 +55,7 @@ let areConstraintsSatisfied (optionTypeSupported: bool) (recordType: Type) (prop
         |> Array.filter (snd >> (=) false)
         |> Array.map (fun (prop, _) -> prop.Name)
         |> String.concat ", "
-        |> sprintf
-            "All properties of type '%s' must be primitives, string%s. Offending properties as follows: %s"
-                (if optionTypeSupported then ", or an option type" else "")
-                recordType.AssemblyQualifiedName
+        |> sprintf "All properties of type '%s' must be primitives, string, or an option type. Offending properties as follows: %s" recordType.AssemblyQualifiedName
         |> Error
 
 let extractPropertyValues (instance: obj) (props: PropertyInfo array) =
@@ -138,10 +134,10 @@ let fillPropertyValues<'T> (values: (string * string) array) (props: PropertyInf
     else
     Error "'T must be an F# Record type or unit!"
 
-let extractRecordValues (optionTypeSupported: bool) (instance: obj) (typ: Type) =
+let extractRecordValues (instance: obj) (typ: Type) =
     typ
     |> getRecordFields
-    |> Result.bind (areConstraintsSatisfied optionTypeSupported typ)
+    |> Result.bind (areConstraintsSatisfied typ)
     |> Result.map (extractPropertyValues instance)
 
 // TODO: Could be replaced with Microsoft.AspNetCore.Http.QueryString. Will that play nice with WASM?

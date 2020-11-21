@@ -40,23 +40,19 @@ val extractOptionValue:
 /// <summary>
 /// Checks if the provided type can be serialized to a query string.
 /// </summary>
-/// <param name="optionTypeSupported">Determines whether or not an Option type is supported</param>
 /// <param name="typ">The typ to check</param>
 /// <returns/>
 val isTypeSerializable:
-    optionTypeSupported: bool ->
     typ: Type
         -> bool
 
 /// <summary>
 /// Verifies all of the provided `PropertyInfo`s are serializable.
 /// </summary>
-/// <param name="optionTypeSupported">Determines whether or not an Option type is supported</param>
 /// <param name="recordType">The record type to check</param>
 /// <param name="props">A list of properties on the record to check</param>
 /// <returns/>
 val areConstraintsSatisfied:
-    optionTypeSupported: bool ->
     recordType: Type ->
     props     : PropertyInfo array
         -> Result<PropertyInfo array, string>
@@ -87,12 +83,10 @@ val fillPropertyValues:
 /// <summary>
 /// Extracts all of the values from a given record (primitive values only).
 /// </summary>
-/// <param name="optionTypeSupported">Determines whether or not an Option type is supported</param>
 /// <param name="instance">The record object to extract from</param>
 /// <param name="typ">The type of <seeparam name="instance"/></param>
 /// <returns>`Ok(property name, property value)` or `Error (errorMessage)`</returns>
 val extractRecordValues:
-    optionTypeSupported: bool ->
     instance: obj  ->
     typ     : Type
         -> Result<(string * string) array,string>
