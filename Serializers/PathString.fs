@@ -117,21 +117,24 @@ let validatePopulatedPath (pathString: string) =
             >> String.concat ", "
             >> (sprintf "The following parameters were missing from the record: %s")
             >> Error)
-    else if Uri.IsWellFormedUriString(pathString, UriKind.Absolute) |> not then
+    else if Uri.IsWellFormedUriString(pathString, UriKind.Relative) |> not then
         Error $"Populated uri '{pathString}' is not a well formed uri string!"
     else
         Ok pathString
 
 let populatePath (pathStringFormat: string) (values: (string * string option) array) =
     applyOrderedPathString pathStringFormat values
-    |> Result.bind extractPathParams
-    |> Result.bind (partitionPathAndQueryString values)
-    |> Result.map (fun (pathParams, queryParams) ->
-        pathStringFormat
-        |> applyPathParams pathParams
-        |> applyQueryString queryParams
+    |> Result.bind (fun ordered ->
+        ordered
+        |> extractPathParams
+        |> Result.bind (partitionPathAndQueryString values)
+        |> Result.map (fun (pathParams, queryParams) ->
+            ordered
+            |> applyPathParams pathParams
+            |> applyQueryString queryParams
+        )
+        |> Result.bind validatePopulatedPath
     )
-    |> Result.bind validatePopulatedPath
 
 let serialize (pathStringFormat: string) (record: obj): Result<string, string> =
     if isNull record then
