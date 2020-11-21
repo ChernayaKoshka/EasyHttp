@@ -23,8 +23,8 @@ Second, we need to define the API we're going to hit. This takes form of a recor
 ```fs
 type SomeOrderedData =
     {
-        ZData: string
-        AData: string
+        First: string
+        Second: string
         QData: string
     }
 
@@ -46,7 +46,7 @@ type TestRecord =
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("{!ordered!}")>]
-        TestOrderedPathStringAnonRecord: {| ZData: string; AData: string |} -> Response
+        TestOrderedPathStringAnonRecord: {| First: string; Second: string |} -> Response
 
         [<Method("DELETE")>]
         TestDelete: unit -> Response
@@ -101,11 +101,11 @@ result.TestPathString {| someData = "blah"; someNumber = 32; someQuery = "queryP
 |> printfn "TestPathString result:\n%A\n"
 
 // [<Path("/some/endpoint/{!ordered!}")>]
-result.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quickly qooler data" }
+result.TestOrderedPathString { First = "Zee"; Second = "Cool data"; QData = "Quickly qooler data" }
 |> printfn "TestOrderedPathString result:\n%A\n"
 
 // [<Path("{!ordered!}")>]
-result.TestOrderedPathStringAnonRecord {| ZData = "ZData"; AData = "AData" |}
+result.TestOrderedPathStringAnonRecord {| First = "First"; Second = "Second" |}
 |> printfn "TestOrderedPathStringAnonRecord result:\n%A\n"
 
 result.TestDelete()
@@ -143,7 +143,7 @@ TestOrderedPathString result:
 
 TestOrderedPathStringAnonRecord result:
 { Method = "POST"
-  Path = "/AData/ZData"
+  Path = "/Second/First"
   QueryString = ""
   Content = "" }
 
