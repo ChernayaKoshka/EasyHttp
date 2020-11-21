@@ -41,12 +41,20 @@ type TestRecord =
         TestPathString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string |} -> Response
 
         [<SerializationOverride(ESerializationType.PathString)>]
+        [<Path("{someData}/{someNumber}{!query!}")>]
+        TestOptionalQueryString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string option |} -> Response
+
+        [<SerializationOverride(ESerializationType.PathString)>]
+        [<Path("{someData}/{someNumber}")>]
+        TestOptionalPathString: {| someData: string; someNumber: int option |} -> Response
+
+        [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("/some/endpoint/{!ordered!}")>]
         TestOrderedPathString: SomeOrderedData -> Response
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("{!ordered!}")>]
-        TestOrderedPathStringAnonRecord: {| First: string; Second: string |} -> Response
+        TestOrderedPathStringAnonRecord: {| ZData: string; AData: string |} -> Response
 
         [<Method("DELETE")>]
         TestDelete: unit -> Response
@@ -92,7 +100,6 @@ let result =
 result.TestJson {| someNumber = 1000 |}
 |> printfn "Test result:\n%A\n"
 
-// [<Path("{!query!}")>]
 result.TestQueryString {| someNumber = 1000 |}
 |> printfn "TestQueryString result:\n%A\n"
 
@@ -100,12 +107,24 @@ result.TestQueryString {| someNumber = 1000 |}
 result.TestPathString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = "queryParamValue2" |}
 |> printfn "TestPathString result:\n%A\n"
 
+// [<Path("{someData}/{someNumber}{!query!}")>]
+result.TestOptionalQueryString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = None |}
+|> printfn "TestOptionalQueryString result:\n%A\n"
+
+// [<Path("{someData}/{someNumber}")>]
+try
+    result.TestOptionalPathString {| someData = "blah"; someNumber = None |}
+    |> ignore
+with
+| :? System.Reflection.TargetInvocationException as tie ->
+    printfn "TestOptionalPathString result:\n%s\n" tie.InnerException.Message
+
 // [<Path("/some/endpoint/{!ordered!}")>]
-result.TestOrderedPathString { First = "Zee"; Second = "Cool data"; QData = "Quickly qooler data" }
+result.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quickly qooler data" }
 |> printfn "TestOrderedPathString result:\n%A\n"
 
 // [<Path("{!ordered!}")>]
-result.TestOrderedPathStringAnonRecord {| First = "First"; Second = "Second" |}
+result.TestOrderedPathStringAnonRecord {| ZData = "First"; AData = "Second" |}
 |> printfn "TestOrderedPathStringAnonRecord result:\n%A\n"
 
 result.TestDelete()
@@ -134,6 +153,15 @@ TestPathString result:
   Path = "/blah/32"
   QueryString = "?someQuery=queryParamValue1&someQuery2=queryParamValue2"
   Content = "" }
+
+TestOptionalQueryString result:
+{ Method = "POST"
+  Path = "/blah/32"
+  QueryString = "?someQuery=queryParamValue1"
+  Content = "" }
+
+TestOptionalPathString result:
+Empty path values are not supported. Offending fields follow: 'someNumber'
 
 TestOrderedPathString result:
 { Method = "POST"

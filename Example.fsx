@@ -35,6 +35,14 @@ type TestRecord =
         TestPathString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string |} -> Response
 
         [<SerializationOverride(ESerializationType.PathString)>]
+        [<Path("{someData}/{someNumber}{!query!}")>]
+        TestOptionalQueryString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string option |} -> Response
+
+        [<SerializationOverride(ESerializationType.PathString)>]
+        [<Path("{someData}/{someNumber}")>]
+        TestOptionalPathString: {| someData: string; someNumber: int option |} -> Response
+
+        [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("/some/endpoint/{!ordered!}")>]
         TestOrderedPathString: SomeOrderedData -> Response
 
@@ -65,6 +73,18 @@ result.TestQueryString {| someNumber = 1000 |}
 // [<Path("{someData}/{someNumber}{!query!}")>]
 result.TestPathString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = "queryParamValue2" |}
 |> printfn "TestPathString result:\n%A\n"
+
+// [<Path("{someData}/{someNumber}{!query!}")>]
+result.TestOptionalQueryString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = None |}
+|> printfn "TestOptionalQueryString result:\n%A\n"
+
+// [<Path("{someData}/{someNumber}")>]
+try
+    result.TestOptionalPathString {| someData = "blah"; someNumber = None |}
+    |> ignore
+with
+| :? System.Reflection.TargetInvocationException as tie ->
+    printfn "TestOptionalPathString result:\n%s\n" tie.InnerException.Message
 
 // [<Path("/some/endpoint/{!ordered!}")>]
 result.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quickly qooler data" }
