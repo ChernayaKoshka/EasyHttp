@@ -46,7 +46,7 @@ module Internal =
             let serializationType =
                 let defaultSerialization =
                     if methodAllowsBody method then JsonSerialization
-                    else QueryStringSerialization
+                    else PathStringSerialization
                 getAttributeContentsOrDefault f (fun (soa: SerializationOverrideAttribute) -> soa.SerializationType) defaultSerialization
 
             if serializationType = JsonSerialization && (methodAllowsBody >> not) method then
@@ -72,12 +72,6 @@ module Internal =
                     new HttpRequestMessage(method, requestUri,
                         Content = new StringContent(content, Encoding.UTF8, "application/json")
                     )
-                | QueryStringSerialization ->
-                    let queryString =
-                        match QueryString.serialize content with
-                        | Ok queryString -> queryString
-                        | Error error -> failwith error
-                    new HttpRequestMessage(method, UriBuilder(requestUri, Query = queryString).Uri)
                 | PathStringSerialization ->
                     let uriFragment =
                         match PathString.serialize uriFragment content with
