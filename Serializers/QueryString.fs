@@ -34,7 +34,7 @@ module Serialize =
             Ok String.Empty
         else
             toSerialize.GetType()
-            |> extractRecordValues true toSerialize
+            |> extractRecordValues toSerialize
             |> Result.map toQueryString
 
 // TODO: Purely for organization, could be moved up?
@@ -72,7 +72,7 @@ module Deserialize =
         let values = fromQueryString queryString
         t
         |> getRecordFields
-        |> Result.bind (areConstraintsSatisfied true t)
+        |> Result.bind (areConstraintsSatisfied t)
         |> Result.bind (fillPropertyValues<'T> values)
 
 let serialize (o: obj) = Serialize.serialize o
