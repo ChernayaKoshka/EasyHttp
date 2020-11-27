@@ -79,16 +79,13 @@ module Internal =
                         | Error err -> failwith err
                     let requestUri = Uri(requestUri, uriFragment)
                     new HttpRequestMessage(method, requestUri)
-                // no `client.Send` available in netcoreapp3.1 and Bolero hasn't released net 5 support yet
-                |> client.SendAsync
-                |> Async.AwaitTask
-                |> Async.RunSynchronously
+                |> client.Send
 
             if typeof<'ReturnType> = typeof<unit> then
                 box () :?> 'ReturnType
             else
                 // ditto. Apparently netcoreapp3.1 is allergic to synchronous methods.
-                use reader = new StreamReader(response.Content.ReadAsStreamAsync() |> Async.AwaitTask |> Async.RunSynchronously)
+                use reader = new StreamReader(response.Content.ReadAsStream())
                 JsonSerializer.Deserialize<'ReturnType>(reader.ReadToEnd())
 
     let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send)
