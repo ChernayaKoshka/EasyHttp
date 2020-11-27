@@ -53,6 +53,8 @@ type TestRecord =
         [<Method("DELETE")>]
         TestDelete: unit -> Response
 
+        StringResult: unit -> string
+
         [<Path("/some/other/endpoint")>]
         UnitFunction: unit -> unit
     }
@@ -96,6 +98,9 @@ result.TestOrderedPathStringAnonRecord {| ZData = "First"; AData = "Second" |}
 
 result.TestDelete()
 |> printfn "TestDelete result:\n%A\n"
+
+result.StringResult()
+|> printfn "StringResult result:\n%A\n"
 
 result.UnitFunction()
 |> printfn "UnitFunction result:\n%A\n"

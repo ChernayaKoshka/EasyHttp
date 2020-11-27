@@ -59,6 +59,10 @@ type TestRecord =
         [<Method("DELETE")>]
         TestDelete: unit -> Response
 
+        // The return type of `string` means that the response body is read and returned with no deserialization performed
+        StringResult: unit -> string
+
+        // The return type of `unit` means that the response body will not be read
         [<Path("/some/other/endpoint")>]
         UnitFunction: unit -> unit
     }
@@ -69,7 +73,7 @@ type TestRecord =
 Let's break that down, shall we?:
 
 1. All of the _inputs_ are either `unit` or an anonymous record in this example. Named records work as well, but the anonymous record syntax may be more convenient.
-   * This is because (currently), the only accepted function definitions have a single input (a record or unit type) and a single output (any JSON serializable object). This choice was made in order to support JSON payloads and query string serialization.
+   * This is because (currently), the only accepted function definitions have a single input (a record or unit type) and a single output (any JSON serializable object _or string_). This choice was made in order to support JSON payloads, query string serialization, as well as general response body retrieval.
 2. The _name_ of a function is purely for the caller's benefit
 3. `SerializationOverride` is an attribute that takes an enum with one of two values:
    1. `ESerializationType.Json`, this will serialize the function input to JSON
@@ -130,6 +134,9 @@ result.TestOrderedPathStringAnonRecord {| ZData = "First"; AData = "Second" |}
 result.TestDelete()
 |> printfn "TestDelete result:\n%A\n"
 
+result.StringResult()
+|> printfn "StringResult result:\n%A\n"
+
 result.UnitFunction()
 |> printfn "UnitFunction result:\n%A\n"
 ```
@@ -180,6 +187,9 @@ TestDelete result:
   Path = "/"
   QueryString = ""
   Content = "" }
+
+StringResult result:
+"{"Content":"null","Method":"POST","Path":"/","QueryString":""}"
 
 UnitFunction result:
 ()

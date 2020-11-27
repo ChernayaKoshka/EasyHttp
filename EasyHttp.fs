@@ -83,6 +83,9 @@ module Internal =
 
             if typeof<'ReturnType> = typeof<unit> then
                 box () :?> 'ReturnType
+            else if typeof<'ReturnType> = typeof<string> then
+                use reader = new StreamReader(response.Content.ReadAsStream())
+                box (reader.ReadToEnd()) :?> 'ReturnType
             else
                 // ditto. Apparently netcoreapp3.1 is allergic to synchronous methods.
                 use reader = new StreamReader(response.Content.ReadAsStream())
