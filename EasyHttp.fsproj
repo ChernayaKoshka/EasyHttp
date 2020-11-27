@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFramework>net5.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>ChernayaKoshka</Authors>
     <Product>EasyHttp</Product>
     <PackageId>FsEasyHttp</PackageId>
@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>Http, F#</PackageTags>
-    <PackageReleaseNotes>Multi-target netcoreapp3.1 and net5.0</PackageReleaseNotes>
+    <PackageReleaseNotes>Retarget net5.0 only</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
