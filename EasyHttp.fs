@@ -125,8 +125,7 @@ let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) 
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    let result = sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; hostUri; e.Path; arg |])
-                    Convert.ChangeType(result, e.ReturnType)
+                    sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; hostUri; e.Path; arg |])
             )
         )
         |> Array.ofList
