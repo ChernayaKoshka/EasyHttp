@@ -40,9 +40,15 @@ module Internal =
             else
             let argType, returnType = FSharpType.GetFunctionElements(f.PropertyType)
 
-            if argType <> typeof<unit> && argType |> FSharpType.IsRecord |> not then
-                (endpoints, $"The argument of {f.Name} must be an F# record or unit." :: errors)
+            if returnType.GetGenericTypeDefinition() <> typedefof<Task<_>> then
+                (endpoints, $"'{f.Name}' return type must be Task<_>" :: errors)
             else
+
+            if argType <> typeof<unit> && argType |> FSharpType.IsRecord |> not then
+                (endpoints, $"The argument of {f.Name} must be a 'Task<F# Record>' or Task<unit>." :: errors)
+            else
+
+            let returnType = returnType.GetGenericArguments().[0]
             let path = getAttributeContentsOrDefault f (fun (pa: PathAttribute) -> pa.Path) String.Empty
             let method = getAttributeContentsOrDefault f (fun (ma: MethodAttribute)-> ma.Method) HttpMethod.Post
             let serializationType =
