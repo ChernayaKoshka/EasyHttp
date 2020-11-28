@@ -40,7 +40,7 @@ module Internal =
             else
             let argType, returnType = FSharpType.GetFunctionElements(f.PropertyType)
 
-            if returnType.GetGenericTypeDefinition() <> typedefof<Task<_>> then
+            if not returnType.IsGenericType || returnType.GetGenericTypeDefinition() <> typedefof<Task<_>> then
                 (endpoints, $"'{f.Name}' return type must be Task<_>" :: errors)
             else
 
