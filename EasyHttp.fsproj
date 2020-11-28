@@ -34,4 +34,8 @@
     <Compile Include="EasyHttp.fsi" />
     <Compile Include="EasyHttp.fs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ply" Version="0.*" />
+  </ItemGroup>
 </Project>
