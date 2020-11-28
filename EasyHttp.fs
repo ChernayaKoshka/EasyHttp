@@ -1,4 +1,4 @@
-[<AutoOpen>]
+﻿[<AutoOpen>]
 module EasyHttp.EasyHttp
 
 open EasyHttp.Serializers
@@ -123,7 +123,6 @@ let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) 
         |> String.concat Environment.NewLine
         |> Error
     else
-    let client = new HttpClient() |> configureClient
     let args =
         endpoints
         |> List.map (fun e ->
