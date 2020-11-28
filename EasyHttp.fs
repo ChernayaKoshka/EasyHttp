@@ -1,15 +1,17 @@
 [<AutoOpen>]
 module EasyHttp.EasyHttp
 
+open EasyHttp.Serializers
+open FSharp.Control.Tasks
+open FSharp.Reflection
 open System
 open System.IO
 open System.Net
+open System.Net.Http
+open System.Reflection
 open System.Text
 open System.Text.Json
-open FSharp.Reflection
-open System.Reflection
-open System.Net.Http
-open EasyHttp.Serializers
+open System.Threading.Tasks
 
 [<Obsolete("This module is only exposed to support makeApi being inline in order to use SRTP. This is an implementation detail and should not be utilized.")>]
 /// Do not use.
