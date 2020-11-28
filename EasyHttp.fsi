@@ -65,7 +65,7 @@ module Internal =
             requestUri: Uri ->
             uriFragment: string ->
             content: obj
-                -> 'ReturnType
+                -> Task<'ReturnType>
 
     /// <summary>
     /// Holds the `Http.Send` method info, to be used later to dynamically create generic versions and invoke them.
