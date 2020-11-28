@@ -3,6 +3,7 @@ module EasyHttp.EasyHttp
 open System
 open System.Reflection
 open System.Net.Http
+open System.Threading.Tasks
 
 /// test
 module Internal =
