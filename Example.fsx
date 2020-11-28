@@ -1,3 +1,4 @@
+#r "nuget:ply"
 #load @"Types.fsi" @"Types.fs"
 #load @"Serializers\Utils.fsi" @"Serializers\Utils.fs"
 #load @"Serializers\PathString.fsi" @"Serializers\PathString.fs"
@@ -6,6 +7,8 @@
 
 open System
 open EasyHttp
+open System.Net.Http
+open System.Threading.Tasks
 
 type Response =
     {
@@ -24,83 +27,89 @@ type SomeOrderedData =
 
 type TestRecord =
     {
-        TestJson: {| someNumber: int |} -> Response
+        TestJson: {| someNumber: int |} -> Task<Response>
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("/{!query!}")>]
-        TestQueryString: {| someNumber: int |} -> Response
+        TestQueryString: {| someNumber: int |} -> Task<Response>
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("{someData}/{someNumber}{!query!}")>]
-        TestPathString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string |} -> Response
+        TestPathString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string |} -> Task<Response>
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("{someData}/{someNumber}{!query!}")>]
-        TestOptionalQueryString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string option |} -> Response
+        TestOptionalQueryString: {| someData: string; someNumber: int; someQuery: string; someQuery2: string option |} -> Task<Response>
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("{someData}/{someNumber}")>]
-        TestOptionalPathString: {| someData: string; someNumber: int option |} -> Response
+        TestOptionalPathString: {| someData: string; someNumber: int option |} -> Task<Response>
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("/some/endpoint/{!ordered!}")>]
-        TestOrderedPathString: SomeOrderedData -> Response
+        TestOrderedPathString: SomeOrderedData -> Task<Response>
 
         [<SerializationOverride(ESerializationType.PathString)>]
         [<Path("{!ordered!}")>]
-        TestOrderedPathStringAnonRecord: {| ZData: string; AData: string |} -> Response
+        TestOrderedPathStringAnonRecord: {| ZData: string; AData: string |} -> Task<Response>
 
         [<Method("DELETE")>]
-        TestDelete: unit -> Response
+        TestDelete: unit -> Task<Response>
 
-        StringResult: unit -> string
+        StringResult: unit -> Task<string>
 
         [<Path("/some/other/endpoint")>]
-        UnitFunction: unit -> unit
+        UnitFunction: unit -> Task<unit>
     }
     with
         static member BaseUri = Uri("http://localhost:8080")
 
 let result =
-    match makeApi<TestRecord> id with
+    match makeApi<TestRecord> (new HttpClient()) with
     | Ok s -> s
     | Error err -> failwith err
 
+let inline runPrint fmt t =
+    t
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> printfn fmt
+
 result.TestJson {| someNumber = 1000 |}
-|> printfn "Test result:\n%A\n"
+|> runPrint "Test result:\n%A\n"
 
 result.TestQueryString {| someNumber = 1000 |}
-|> printfn "TestQueryString result:\n%A\n"
+|> runPrint"TestQueryString result:\n%A\n"
 
 // [<Path("{someData}/{someNumber}{!query!}")>]
 result.TestPathString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = "queryParamValue2" |}
-|> printfn "TestPathString result:\n%A\n"
+|> runPrint "TestPathString result:\n%A\n"
 
 // [<Path("{someData}/{someNumber}{!query!}")>]
 result.TestOptionalQueryString {| someData = "blah"; someNumber = 32; someQuery = "queryParamValue1"; someQuery2 = None |}
-|> printfn "TestOptionalQueryString result:\n%A\n"
+|> runPrint"TestOptionalQueryString result:\n%A\n"
 
 // [<Path("{someData}/{someNumber}")>]
 try
     result.TestOptionalPathString {| someData = "blah"; someNumber = None |}
-    |> ignore
+    |> runPrint "This succeeded?: %A"
 with
-| :? System.Reflection.TargetInvocationException as tie ->
-    printfn "TestOptionalPathString result:\n%s\n" tie.InnerException.Message
+| :? AggregateException as ae ->
+    printfn "TestOptionalPathString result:\n%s\n" ae.InnerException.Message
 
 // [<Path("/some/endpoint/{!ordered!}")>]
 result.TestOrderedPathString { ZData = "Zee"; AData = "Cool data"; QData = "Quickly qooler data" }
-|> printfn "TestOrderedPathString result:\n%A\n"
+|> runPrint "TestOrderedPathString result:\n%A\n"
 
 // [<Path("{!ordered!}")>]
 result.TestOrderedPathStringAnonRecord {| ZData = "First"; AData = "Second" |}
-|> printfn "TestOrderedPathStringAnonRecord result:\n%A\n"
+|> runPrint "TestOrderedPathStringAnonRecord result:\n%A\n"
 
 result.TestDelete()
-|> printfn "TestDelete result:\n%A\n"
+|> runPrint "TestDelete result:\n%A\n"
 
 result.StringResult()
-|> printfn "StringResult result:\n%A\n"
+|> runPrint "StringResult result:\n%A\n"
 
 result.UnitFunction()
-|> printfn "UnitFunction result:\n%A\n"
+|> runPrint "UnitFunction result:\n%A\n"
