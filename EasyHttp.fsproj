@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>Http, F#</PackageTags>
-    <PackageReleaseNotes>Convert to use Task internally, all function return types must be `Task<T>`</PackageReleaseNotes>
+    <PackageReleaseNotes>Convert to use Task internally, all function return types must be `Task&lt;T&gt;`</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
