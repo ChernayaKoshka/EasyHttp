@@ -1,4 +1,4 @@
-﻿[<AutoOpen>]
+[<AutoOpen>]
 module EasyHttp.EasyHttp
 
 open System
@@ -97,7 +97,7 @@ module Internal =
 open Internal
 
 // TODO: How about we verify the path doesn't have any optional values in it _before_ sending it off?
-let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > (configureClient: HttpClient -> HttpClient) =
+let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > (client: HttpClient) =
     let t = typeof< ^Definition >
     // because we're not passing in an instance of the type, we can't use SRTP syntax to access it
     // however, SRTP have _guaranteed_ that it exists on the record! :D

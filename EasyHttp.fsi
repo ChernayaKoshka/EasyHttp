@@ -75,7 +75,7 @@ module Internal =
 /// <summary>
 /// Populates the function definitions contained within a record of type `^Definition` using attributes+signature to invoke web requests.
 /// </summary>
-/// <param name="configureClient">Configures the HttpClient that will be used in the web requests. `id` can be provided if no such configuraiton is desired.</param>
+/// <param name="client">The HttpClient instance to use for all subsequent requests</param>
 /// <typeparam name="^Definition">The type of the record to construct. It _must_ implement a static member called `BaseUri` that returns a `Uri` that will be used as the base URI for all request.</typeparam>
 /// <returns>A `Result<^Definition, string>` type depending on whether or not the creation was successful.</returns>
-val inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > : (HttpClient -> HttpClient) -> Result<'Definition, string>
+val inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > : client: HttpClient -> Result<'Definition, string>
