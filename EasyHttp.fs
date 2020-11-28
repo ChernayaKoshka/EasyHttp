@@ -65,8 +65,8 @@ module Internal =
         ) (List.empty, List.empty)
         |> fun (a, b) -> (List.rev a, List.rev b)
     type Http private () =
-        static member Send<'ReturnType> (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj) =
-            let response =
+        static member Send (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj) : Task<'ReturnType> = task {
+            let! response =
                 match serializationType with
                 | JsonSerialization ->
                     // TODO: Allow JsonSerializer to house serialization options? How would that work with an Attribute?
@@ -81,17 +81,21 @@ module Internal =
                         | Error err -> failwith err
                     let requestUri = Uri(requestUri, uriFragment)
                     new HttpRequestMessage(method, requestUri)
-                |> client.Send
+                |> client.SendAsync
 
             if typeof<'ReturnType> = typeof<unit> then
-                box () :?> 'ReturnType
-            else if typeof<'ReturnType> = typeof<string> then
-                use reader = new StreamReader(response.Content.ReadAsStream())
-                box (reader.ReadToEnd()) :?> 'ReturnType
+                return box () :?> 'ReturnType
+
             else
-                // ditto. Apparently netcoreapp3.1 is allergic to synchronous methods.
-                use reader = new StreamReader(response.Content.ReadAsStream())
-                JsonSerializer.Deserialize<'ReturnType>(reader.ReadToEnd())
+            let! stream = response.Content.ReadAsStreamAsync()
+            if typeof<'ReturnType> = typeof<string> then
+                use reader = new StreamReader(stream)
+                let! body = reader.ReadToEndAsync()
+                return box body :?> 'ReturnType
+
+            else
+            return! JsonSerializer.DeserializeAsync<'ReturnType>(stream)
+        }
 
     let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send)
 
