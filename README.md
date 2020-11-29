@@ -90,6 +90,8 @@ Let's break that down, shall we?:
 
    For example, given a record of `{ Blah = "Something"; CoolNumber = 42; ANumber = 2; AString = "some cool string" }` and a `Path` of `{Blah}/{CoolNumber}{!query!}` will result in a path of `Something/32?ANumber=2&AString=some+cool+string`.
 
+   **Warning:** There are several "gotchas" with regards to how the base uri and path fragments get combined. To avoid this, the short answer is: Ensure your base uri has a trailing slash and that none of your specified paths have a leading slash. The long answer can be read in the comments of [this StackOverflow answer](https://stackoverflow.com/a/1527643)
+
 Notes:
 * JSON serialization is not supported for verbs that do not allow a body. This is to stay compatible with WASM.
 * Multiple _different_ attributes are allowed on a single function. (i.e., if you wanted to specify both a `Method` and a `Path` attribute)
