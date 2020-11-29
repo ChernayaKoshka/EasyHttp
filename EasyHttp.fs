@@ -1,4 +1,4 @@
-﻿[<AutoOpen>]
+[<AutoOpen>]
 module EasyHttp.EasyHttp
 
 open EasyHttp.Serializers
@@ -75,6 +75,7 @@ module Internal =
             let! response =
                 match serializationType with
                 | JsonSerialization ->
+                    let requestUri = Uri(requestUri, uriFragment)
                     // TODO: Allow JsonSerializer to house serialization options? How would that work with an Attribute?
                     let content = JsonSerializer.Serialize(content)
                     new HttpRequestMessage(method, requestUri,
