@@ -19,7 +19,7 @@ jobs:
 
       # Pack
       - name: Pack project
-        run: dotnet pack
+        run: dotnet pack --configuration Release --nologo
 
       # Publish
       - name: publish on version change

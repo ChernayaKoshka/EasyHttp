@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <Authors>ChernayaKoshka</Authors>
     <Product>EasyHttp</Product>
     <PackageId>FsEasyHttp</PackageId>
@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>Http, F#</PackageTags>
-    <PackageReleaseNotes>Convert to use Task internally, all function return types must be `Task&lt;T&gt;`</PackageReleaseNotes>
+    <PackageReleaseNotes>Was accidentally publishing debug builds</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
