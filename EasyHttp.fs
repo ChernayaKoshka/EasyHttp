@@ -13,108 +13,135 @@ open System.Text
 open System.Text.Json
 open System.Threading.Tasks
 
-[<Obsolete("This module is only exposed to support makeApi being inline in order to use SRTP. This is an implementation detail and should not be utilized.")>]
-/// Do not use.
-module Internal =
-    let inline getAttributeContentsOrDefault< ^Attribute, ^Result when ^Attribute :> Attribute > (info: PropertyInfo) accessor (defaultValue: ^Result) =
-        let attribute = Attribute.GetCustomAttribute(info, typeof< ^Attribute >)
-        if isNull attribute then
-            defaultValue
+/// <summary>
+/// Retrieves the contents of an attribute using the provided accessor. If the attribute is not present, it will return the defaultValue provided.
+/// </summary>
+/// <param name="info">The property info to retrieve an attribute from</param>
+/// <param name="accessor">The function to access the attribute contents if retrieved</param>
+/// <param name="defaultValue"></param>
+/// <typeparam name="^Attribute">The attribute type to retrieve.</typeparam>
+/// <typeparam name="^Result">The result/default value type</typeparam>
+/// <returns>The contents of the attribute as determined by the accessor or the default value.</returns>
+let inline getAttributeContentsOrDefault< ^Attribute, ^Result when ^Attribute :> Attribute > (info: PropertyInfo) accessor (defaultValue: ^Result) =
+    let attribute = Attribute.GetCustomAttribute(info, typeof< ^Attribute >)
+    if isNull attribute then
+        defaultValue
+    else
+        attribute
+        :?> ^Attribute
+        |> accessor
+
+/// <summary>
+/// Checks if the provided method allows a body.
+/// </summary>
+/// <param name="method">The method to check</param>
+/// <returns>True if the method allows a body, false otherwise.</returns>
+let methodAllowsBody (method: HttpMethod) =
+    match method.Method.ToLowerInvariant() with
+    | "get" | "delete" | "trace" | "options" | "head" -> false
+    | _ -> true
+
+/// <summary>
+/// Extracts endpoint data from a provided record. Using a combination of function signature and attributes (if any).
+/// </summary>
+/// <param name="recordType">The type of a record containing defined endpoints to extract.</param>
+/// <returns>A tuple of an endpoint list and an error list.</returns>
+let extractEndpoints (recordType: Type) =
+    recordType
+    |> FSharpType.GetRecordFields
+    |> Array.fold (fun (endpoints: Endpoint list, errors: string list) f ->
+
+        if f.PropertyType |> FSharpType.IsFunction |> not then
+            (endpoints, $"'{f.PropertyType.AssemblyQualifiedName}' is not an F# function." :: errors)
         else
-            attribute
-            :?> ^Attribute
-            |> accessor
+        let argType, returnType = FSharpType.GetFunctionElements(f.PropertyType)
 
-    let methodAllowsBody (method: HttpMethod) =
-        match method.Method.ToLowerInvariant() with
-        | "get" | "delete" | "trace" | "options" | "head" -> false
-        | _ -> true
+        if not returnType.IsGenericType || returnType.GetGenericTypeDefinition() <> typedefof<Task<_>> then
+            (endpoints, $"'{f.Name}' return type must be Task<_>" :: errors)
+        else
 
-    let extractEndpoints (recordType: Type) =
-        recordType
-        |> FSharpType.GetRecordFields
-        |> Array.fold (fun (endpoints: Endpoint list, errors: string list) f ->
+        if argType <> typeof<unit> && argType |> FSharpType.IsRecord |> not then
+            (endpoints, $"The argument of {f.Name} must be a 'Task<F# Record>' or Task<unit>." :: errors)
+        else
 
-            if f.PropertyType |> FSharpType.IsFunction |> not then
-                (endpoints, $"'{f.PropertyType.AssemblyQualifiedName}' is not an F# function." :: errors)
-            else
-            let argType, returnType = FSharpType.GetFunctionElements(f.PropertyType)
+        let returnType = returnType.GetGenericArguments().[0]
+        let path = getAttributeContentsOrDefault f (fun (pa: PathAttribute) -> pa.Path) String.Empty
+        let method = getAttributeContentsOrDefault f (fun (ma: MethodAttribute)-> ma.Method) HttpMethod.Post
+        let serializationType =
+            let defaultSerialization =
+                if methodAllowsBody method then JsonSerialization
+                else PathStringSerialization
+            getAttributeContentsOrDefault f (fun (soa: SerializationOverrideAttribute) -> soa.SerializationType) defaultSerialization
 
-            if not returnType.IsGenericType || returnType.GetGenericTypeDefinition() <> typedefof<Task<_>> then
-                (endpoints, $"'{f.Name}' return type must be Task<_>" :: errors)
-            else
+        if serializationType = JsonSerialization && (methodAllowsBody >> not) method then
+            (endpoints, $"{f.Name}: {method} and {serializationType} are not compatible. Likely because '{method}' does not allow a body." :: errors)
+        else
+        {
+            Path = path
+            Method = method
+            SerializationType = serializationType
+            FunctionType = f.PropertyType
+            ArgumentType = argType
+            ReturnType = returnType
+        } :: endpoints, errors
+    ) (List.empty, List.empty)
+    |> fun (a, b) -> (List.rev a, List.rev b)
 
-            if argType <> typeof<unit> && argType |> FSharpType.IsRecord |> not then
-                (endpoints, $"The argument of {f.Name} must be a 'Task<F# Record>' or Task<unit>." :: errors)
-            else
+/// <Summary>
+/// This class' only purpose is to contain the Send function. It needs to exist in a class in order to facilitate retrieving its definition
+/// and creating a generic method from that type definition.
+/// </Summary>
+type Http private () =
 
-            let returnType = returnType.GetGenericArguments().[0]
-            let path = getAttributeContentsOrDefault f (fun (pa: PathAttribute) -> pa.Path) String.Empty
-            let method = getAttributeContentsOrDefault f (fun (ma: MethodAttribute)-> ma.Method) HttpMethod.Post
-            let serializationType =
-                let defaultSerialization =
-                    if methodAllowsBody method then JsonSerialization
-                    else PathStringSerialization
-                getAttributeContentsOrDefault f (fun (soa: SerializationOverrideAttribute) -> soa.SerializationType) defaultSerialization
+    /// <summary>
+    /// Sends an HTTP request, serializing the content either a JSON body or a query string depending on the provided serialization type.
+    /// Regardless of the serialization type, it will deserialize any response as JSON.
+    /// </summary>
+    /// <param name="client">The provided client to make the request with.</param>
+    /// <param name="method">The method to use.</param>
+    /// <param name="serializationType">Determines how Send should serialize the provided content.</param>
+    /// <param name="requestUri">The URI to make a request to</param>
+    /// <param name="uriFragment">The URI fragment from the method</param>
+    /// <param name="content">The content to serialize</param>
+    /// <typeparam name="'ReturnType">The expected return type of the request (assumed JSON)</typeparam>
+    /// <returns>Returns the response deserialized as JSON to the provided 'ReturnType</returns>
+    static member Send (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj) : Task<'ReturnType> = task {
+        let! response =
+            match serializationType with
+            | JsonSerialization ->
+                let requestUri = Uri(requestUri, uriFragment)
+                // TODO: Allow JsonSerializer to house serialization options? How would that work with an Attribute?
+                let content = JsonSerializer.Serialize(content)
+                new HttpRequestMessage(method, requestUri,
+                    Content = new StringContent(content, Encoding.UTF8, "application/json")
+                )
+            | PathStringSerialization ->
+                let uriFragment =
+                    match PathString.serialize uriFragment content with
+                    | Ok fragment -> fragment
+                    | Error err -> failwith err
+                let requestUri = Uri(requestUri, uriFragment)
+                new HttpRequestMessage(method, requestUri)
+            |> client.SendAsync
 
-            if serializationType = JsonSerialization && (methodAllowsBody >> not) method then
-                (endpoints, $"{f.Name}: {method} and {serializationType} are not compatible. Likely because '{method}' does not allow a body." :: errors)
-            else
-            {
-                Path = path
-                Method = method
-                SerializationType = serializationType
-                FunctionType = f.PropertyType
-                ArgumentType = argType
-                ReturnType = returnType
-            } :: endpoints, errors
-        ) (List.empty, List.empty)
-        |> fun (a, b) -> (List.rev a, List.rev b)
-    type Http private () =
-        static member Send (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj) : Task<'ReturnType> = task {
-            let! response =
-                match serializationType with
-                | JsonSerialization ->
-                    let requestUri = Uri(requestUri, uriFragment)
-                    // TODO: Allow JsonSerializer to house serialization options? How would that work with an Attribute?
-                    let content = JsonSerializer.Serialize(content)
-                    new HttpRequestMessage(method, requestUri,
-                        Content = new StringContent(content, Encoding.UTF8, "application/json")
-                    )
-                | PathStringSerialization ->
-                    let uriFragment =
-                        match PathString.serialize uriFragment content with
-                        | Ok fragment -> fragment
-                        | Error err -> failwith err
-                    let requestUri = Uri(requestUri, uriFragment)
-                    new HttpRequestMessage(method, requestUri)
-                |> client.SendAsync
+        if typeof<'ReturnType> = typeof<unit> then
+            return box () :?> 'ReturnType
 
-            if typeof<'ReturnType> = typeof<unit> then
-                return box () :?> 'ReturnType
+        else
+        let! stream = response.Content.ReadAsStreamAsync()
+        if typeof<'ReturnType> = typeof<string> then
+            use reader = new StreamReader(stream)
+            let! body = reader.ReadToEndAsync()
+            return box body :?> 'ReturnType
 
-            else
-            let! stream = response.Content.ReadAsStreamAsync()
-            if typeof<'ReturnType> = typeof<string> then
-                use reader = new StreamReader(stream)
-                let! body = reader.ReadToEndAsync()
-                return box body :?> 'ReturnType
-
-            else
-            return! JsonSerializer.DeserializeAsync<'ReturnType>(stream)
-        }
-
-    let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send)
-
-#nowarn "44" // This construct is deprecated.
-open Internal
+        else
+        return! JsonSerializer.DeserializeAsync<'ReturnType>(stream)
+    }
+let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.Static ||| BindingFlags.NonPublic)
 
 // TODO: How about we verify the path doesn't have any optional values in it _before_ sending it off?
-let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) > (client: HttpClient) =
-    let t = typeof< ^Definition >
-    // because we're not passing in an instance of the type, we can't use SRTP syntax to access it
-    // however, SRTP have _guaranteed_ that it exists on the record! :D
-    let hostUri = t.GetProperty("BaseUri").GetValue(null) :?> Uri
+let makeApi< 'ApiDefinition > (baseUri: Uri) (client: HttpClient) =
+    let t = typeof< 'ApiDefinition >
     if t |> FSharpType.IsRecord |> not then
         Error $"{t.AssemblyQualifiedName} must be a record."
     else
@@ -131,15 +158,11 @@ let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) 
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    let res = sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; hostUri; e.Path; arg |])
-                    // inexplicably fixes the "Uncaught Error: undefined" exception in FireFox
-                    // FireFox is the only one with the issue 🤷‍♂️ (besides IE, which is a whole other ballgame I don't give a 🍴 about)
-                    let arbitrary = 2
-                    res
+                    sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; baseUri; e.Path; arg |])
             )
         )
         |> Array.ofList
 
-    FSharpValue.MakeRecord(typeof< ^Definition >, args)
-    :?> ^Definition
+    FSharpValue.MakeRecord(typeof< 'ApiDefinition >, args)
+    :?> 'ApiDefinition
     |> Ok

@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>2.0.3</Version>
+    <Version>3.0.0</Version>
     <Authors>ChernayaKoshka</Authors>
     <Product>EasyHttp</Product>
     <PackageId>FsEasyHttp</PackageId>
@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>Http, F#</PackageTags>
-    <PackageReleaseNotes>Was accidentally publishing debug builds</PackageReleaseNotes>
+    <PackageReleaseNotes>makeApi is no longer inline in order to fix a weird bug with Bolero/FireFox during routing</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

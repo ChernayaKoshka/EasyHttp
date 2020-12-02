@@ -65,7 +65,7 @@ type TestRecord =
         static member BaseUri = Uri("http://localhost:8080")
 
 let result =
-    match makeApi<TestRecord> (new HttpClient()) with
+    match makeApi<TestRecord> TestRecord.BaseUri (new HttpClient()) with
     | Ok s -> s
     | Error err -> failwith err
 
