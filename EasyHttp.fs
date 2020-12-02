@@ -131,7 +131,11 @@ let inline makeApi< ^Definition when ^Definition : (static member BaseUri: Uri) 
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; hostUri; e.Path; arg |])
+                    let res = sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; hostUri; e.Path; arg |])
+                    // inexplicably fixes the "Uncaught Error: undefined" exception in FireFox
+                    // FireFox is the only one with the issue 🤷‍♂️ (besides IE, which is a whole other ballgame I don't give a 🍴 about)
+                    let arbitrary = 2
+                    res
             )
         )
         |> Array.ofList
