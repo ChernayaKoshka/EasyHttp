@@ -105,7 +105,7 @@ type Http private () =
     /// <param name="content">The content to serialize</param>
     /// <typeparam name="'ReturnType">The expected return type of the request (assumed JSON)</typeparam>
     /// <returns>Returns the response deserialized as JSON to the provided 'ReturnType</returns>
-    static member Send (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj) : Task<'ReturnType> = task {
+    static member Send<'ReturnType> (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj): Task<'ReturnType> = task {
         let! response =
             match serializationType with
             | JsonSerialization ->
@@ -129,13 +129,12 @@ type Http private () =
 
         else
         let! stream = response.Content.ReadAsStreamAsync()
+        use reader = new StreamReader(stream)
+        let! body = reader.ReadToEndAsync()
         if typeof<'ReturnType> = typeof<string> then
-            use reader = new StreamReader(stream)
-            let! body = reader.ReadToEndAsync()
             return box body :?> 'ReturnType
-
         else
-        return! JsonSerializer.DeserializeAsync<'ReturnType>(stream)
+        return JsonSerializer.Deserialize<'ReturnType>(body)
     }
 let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.Static ||| BindingFlags.NonPublic)
 

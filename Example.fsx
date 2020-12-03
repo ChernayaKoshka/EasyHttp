@@ -1,4 +1,4 @@
-#r "nuget:ply"
+#r "nuget:TaskBuilder.fs"
 #load @"Types.fsi" @"Types.fs"
 #load @"Serializers\Utils.fsi" @"Serializers\Utils.fs"
 #load @"Serializers\PathString.fsi" @"Serializers\PathString.fs"
