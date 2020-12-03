@@ -2,7 +2,7 @@
 module EasyHttp.EasyHttp
 
 open EasyHttp.Serializers
-open FSharp.Control.Tasks
+open FSharp.Control.Tasks.V2.ContextInsensitive
 open FSharp.Reflection
 open System
 open System.IO
