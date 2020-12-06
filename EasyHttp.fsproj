@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>4.0.0</Version>
+    <Version>4.0.1</Version>
     <Authors>ChernayaKoshka</Authors>
     <Product>EasyHttp</Product>
     <PackageId>FsEasyHttp</PackageId>
@@ -17,7 +17,7 @@
     <RepositoryUrl>https://github.com/ChernayaKoshka/EasyHttp</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageTags>Http, F#</PackageTags>
-    <PackageReleaseNotes>Move to TaskBuilder.fs from Ply to fix a weird bug with Bolero/FireFox during routing</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix json options not being passed to deserializer</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

@@ -142,7 +142,7 @@ type Http private () =
         if typeof<'ReturnType> = typeof<string> then
             return box body :?> 'ReturnType
         else
-        return JsonSerializer.Deserialize<'ReturnType>(body)
+        return JsonSerializer.Deserialize<'ReturnType>(body, options)
     }
 let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.Static ||| BindingFlags.NonPublic)
 
