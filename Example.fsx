@@ -1,3 +1,4 @@
+open System.Text.Json
 #r "nuget:TaskBuilder.fs"
 #load @"Types.fsi" @"Types.fs"
 #load @"Serializers\Utils.fsi" @"Serializers\Utils.fs"
@@ -65,7 +66,7 @@ type TestRecord =
         static member BaseUri = Uri("http://localhost:8080")
 
 let result =
-    match makeApi<TestRecord> TestRecord.BaseUri (new HttpClient()) with
+    match makeApi<TestRecord> TestRecord.BaseUri (JsonSerializerOptions()) (new HttpClient()) with
     | Ok s -> s
     | Error err -> failwith err
 

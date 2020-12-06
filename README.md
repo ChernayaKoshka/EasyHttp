@@ -96,11 +96,11 @@ Notes:
 * JSON serialization is not supported for verbs that do not allow a body. This is to stay compatible with WASM.
 * Multiple _different_ attributes are allowed on a single function. (i.e., if you wanted to specify both a `Method` and a `Path` attribute)
 
-Finally, all you have to do is call `makeApi<TestRecord> id` to create the record! Example follows:
+Finally, all you have to do is call `makeApi<TestRecord> baseUri jsonOptions httpClient` to create the record! Example follows:
 
 ```fs
 let result =
-    match makeApi<TestRecord> (new HttpClient()) with
+    match makeApi<TestRecord> TestRecord.BaseUri (JsonSerializerOptions()) (new HttpClient()) with
     | Ok s -> s
     | Error err -> failwith err
 
