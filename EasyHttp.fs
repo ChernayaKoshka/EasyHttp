@@ -98,6 +98,7 @@ type Http private () =
     /// Regardless of the serialization type, it will deserialize any response as JSON.
     /// </summary>
     /// <param name="client">The provided client to make the request with.</param>
+    /// <param name="options">The options to use when serializing/deserializing data.</param>
     /// <param name="method">The method to use.</param>
     /// <param name="serializationType">Determines how Send should serialize the provided content.</param>
     /// <param name="requestUri">The URI to make a request to</param>
@@ -105,13 +106,20 @@ type Http private () =
     /// <param name="content">The content to serialize</param>
     /// <typeparam name="'ReturnType">The expected return type of the request (assumed JSON)</typeparam>
     /// <returns>Returns the response deserialized as JSON to the provided 'ReturnType</returns>
-    static member Send<'ReturnType> (client: HttpClient) (method: HttpMethod) (serializationType: SerializationType) (requestUri: Uri) (uriFragment: string) (content: obj): Task<'ReturnType> = task {
+    static member Send<'ReturnType>
+        (client: HttpClient)
+        (options: JsonSerializerOptions)
+        (method: HttpMethod)
+        (serializationType: SerializationType)
+        (requestUri: Uri)
+        (uriFragment: string)
+        (content: obj): Task<'ReturnType> = task {
         let! response =
             match serializationType with
             | JsonSerialization ->
                 let requestUri = Uri(requestUri, uriFragment)
                 // TODO: Allow JsonSerializer to house serialization options? How would that work with an Attribute?
-                let content = JsonSerializer.Serialize(content)
+                let content = JsonSerializer.Serialize(content, options = options)
                 new HttpRequestMessage(method, requestUri,
                     Content = new StringContent(content, Encoding.UTF8, "application/json")
                 )
@@ -139,7 +147,7 @@ type Http private () =
 let sendMethodInfo = typeof<Http>.GetMethod(nameof Http.Send, BindingFlags.Static ||| BindingFlags.NonPublic)
 
 // TODO: How about we verify the path doesn't have any optional values in it _before_ sending it off?
-let makeApi< 'ApiDefinition > (baseUri: Uri) (client: HttpClient) =
+let makeApi< 'ApiDefinition > (baseUri: Uri) (options: JsonSerializerOptions) (client: HttpClient) =
     let t = typeof< 'ApiDefinition >
     if t |> FSharpType.IsRecord |> not then
         Error $"{t.AssemblyQualifiedName} must be a record."
@@ -157,7 +165,7 @@ let makeApi< 'ApiDefinition > (baseUri: Uri) (client: HttpClient) =
             FSharpValue.MakeFunction(
                 e.FunctionType,
                 fun arg ->
-                    sendMethodInfo.Invoke(null, [| client; e.Method; e.SerializationType; baseUri; e.Path; arg |])
+                    sendMethodInfo.Invoke(null, [| client; options; e.Method; e.SerializationType; baseUri; e.Path; arg |])
             )
         )
         |> Array.ofList
